@@ -1,0 +1,132 @@
+
+body {
+  background: #cee0f0;
+  font-size: 16px;
+}
+
+body.logged-in {
+  padding-top: 60px;
+}
+
+.ui.top.menu .item img {
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none;
+}
+
+.small {
+  font-size: 14px;
+}
+
+pre.small {
+  font-size: 14px;
+  line-height: 16px;  
+}
+
+#header-graphic {
+  max-width: 600px;
+  margin-top: -60px;
+  margin-bottom: -80px;
+  z-index: -1000;
+  position: relative;
+}
+#header-graphic img {
+  max-width: 600px;
+  width: 100%;
+}
+
+.single-column {
+  margin: 0 auto; 
+  max-width: 600px;
+}
+
+section.content {
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px #abcce9 solid;
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+section.content.code {
+  background: #eee;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+section.content h4 {
+  margin: 0;
+  margin-top: 1em;
+}
+
+@media(max-width: 616px) {
+  section.content {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+}
+
+section.content textarea {
+  border: 1px #abcce9 solid;
+  border-radius: 4px;
+  padding: 7px;
+  -webkit-box-shadow: inset 0px 0px 6px 2px #e0edf9;
+  -moz-box-shadow: inset 0px 0px 6px 2px #e0edf9;
+  box-shadow: inset 0px 0px 6px 2px #e0edf9;
+}
+
+.result-list {
+  list-style-type: none;
+  margin: 0;
+  margin-top: 1em;
+  padding: 0;
+}
+
+.ui.circular.label.prompt {
+  box-shadow: inset 0 0 10px #aaa;
+  cursor: pointer;
+}
+
+.step_instructions {
+  padding-left: 28px;
+  font-size: 0.8em;
+}
+
+.endpoint-details a {
+  display: none;
+}
+.endpoint-details:hover a {
+  display: inline-block;
+}
+
+.implementation-features {
+  margin: 1em 0;
+}
+.implementation-features td {
+  padding: 2px 4px;
+}
+.implementation-features .num {
+  text-align: right;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #999;
+}
+
+.implementation-features .even-row {
+  background-color: #eee;
+}
+.implementation-features .even-row .ui.label {
+  background-color: #dbdbdb;
+}
+
+.implementation-features .small {
+  font-size: 12px;
+  line-height: 1.3em;
+}
+
+
+#report-details td {
+  padding: 2px;
+}
