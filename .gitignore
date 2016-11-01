@@ -1,0 +1,4 @@
+.DS_Store
+lib/config.php
+vendor/
+issues-pubsub.rocks.html
