@@ -24,6 +24,13 @@ $route->map('GET', '/auth/signout', 'App\\Auth::signout');
 
 $route->map('GET', '/dashboard', 'App\\Controller::dashboard');
 
+$route->map('GET', '/publisher', 'App\\Publisher::index');
+$route->map('POST', '/publisher/discover', 'App\\Publisher::discover');
+
+$route->map('GET', '/subscriber', 'App\\Subscriber::index');
+
+$route->map('GET', '/hub', 'App\\Hub::index');
+
 
 
 

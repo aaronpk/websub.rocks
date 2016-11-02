@@ -113,3 +113,13 @@ function streaming_publish($channel, $data) {
   curl_exec($ch);
 }
 
+function html_to_dom_document($html) {
+  // Parse the source body as HTML
+  $doc = new DOMDocument();
+  libxml_use_internal_errors(true); # suppress parse errors and warnings
+  $body = mb_convert_encoding($html, 'HTML-ENTITIES', mb_detect_encoding($html));
+  @$doc->loadHTML($body, LIBXML_NOWARNING|LIBXML_NOERROR);
+  libxml_clear_errors();
+  return $doc;
+}
+
