@@ -26,6 +26,10 @@ $route->map('GET', '/dashboard', 'App\\Controller::dashboard');
 
 $route->map('GET', '/publisher', 'App\\Publisher::index');
 $route->map('POST', '/publisher/discover', 'App\\Publisher::discover');
+$route->map('POST', '/publisher/subscribe', 'App\\Publisher::subscribe');
+
+$route->map('GET', '/publisher/callback', 'App\\Publisher::callback_verify');
+$route->map('POST', '/publisher/callback', 'App\\Publisher::callback_deliver');
 
 $route->map('GET', '/subscriber', 'App\\Subscriber::index');
 

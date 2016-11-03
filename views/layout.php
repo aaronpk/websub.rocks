@@ -18,17 +18,18 @@
 </head>
 <body<?= is_logged_in() ? ' class="logged-in"' : '' ?>>
 
-<?php if(is_logged_in()): ?>
 <div class="ui top fixed menu">
   <a class="item" href="/"><img src="/assets/pubsub-rocks-icon.png"></a>
   <a class="item" href="/">Home</a>
-  <a class="item" href="/dashboard">Dashboard</a>
-  <div class="right menu">
-    <span class="item"><?= display_url($_SESSION['email']) ?></span>
-    <a class="item" href="/auth/signout">Sign Out</a>
-  </div>
+  <a class="item" href="/publisher">Publisher</a>
+  <?php if(is_logged_in()): ?>
+    <a class="item" href="/dashboard">Dashboard</a>
+    <div class="right menu">
+      <span class="item"><?= display_url($_SESSION['email']) ?></span>
+      <a class="item" href="/auth/signout">Sign Out</a>
+    </div>
+  <?php endif; ?>
 </div>
-<?php endif; ?>
 
 <?= $this->section('content') ?>
 

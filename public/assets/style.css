@@ -2,9 +2,6 @@
 body {
   background: #cee0f0;
   font-size: 16px;
-}
-
-body.logged-in {
   padding-top: 60px;
 }
 
@@ -23,6 +20,15 @@ body.logged-in {
 pre.small {
   font-size: 14px;
   line-height: 16px;  
+}
+
+pre.debug {
+  font-size: 14px;
+  line-height: 16px;  
+  box-shadow: 0 0 0 1px #ccc inset, 0 0 0 0 transparent;
+  padding: 0.5em 0.8em;
+  border-radius: .28571429rem;
+  background: #fafafa;
 }
 
 #header-graphic {
@@ -75,6 +81,11 @@ section.content textarea {
   -webkit-box-shadow: inset 0px 0px 6px 2px #e0edf9;
   -moz-box-shadow: inset 0px 0px 6px 2px #e0edf9;
   box-shadow: inset 0px 0px 6px 2px #e0edf9;
+}
+
+#notification-list pre {
+  max-height: 300px;
+  overflow-y: scroll;
 }
 
 .result-list {
