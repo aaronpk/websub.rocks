@@ -28,6 +28,7 @@ $route->map('GET', '/publisher', 'App\\Publisher::index');
 $route->map('POST', '/publisher/discover', 'App\\Publisher::discover');
 $route->map('POST', '/publisher/subscribe', 'App\\Publisher::subscribe');
 
+$route->map('GET', '/publisher/status', 'App\\Publisher::subscription_status');
 $route->map('GET', '/publisher/callback', 'App\\Publisher::callback_verify');
 $route->map('POST', '/publisher/callback', 'App\\Publisher::callback_deliver');
 

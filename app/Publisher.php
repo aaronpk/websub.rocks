@@ -211,6 +211,31 @@ class Publisher {
     return $params['hub_challenge'];
   }
 
+  public function subscription_status(ServerRequestInterface $request, ResponseInterface $response) {
+    $query = $request->getQueryParams();
+
+    if(!array_key_exists('token', $query)) {
+      return new JsonResponse([
+        'error' => 'bad_request',
+      ], 400);
+    }
+
+    $subscription = ORM::for_table('subscriptions')
+      ->where('token', $query['token'])
+      ->find_one();
+
+    if(!$subscription) {
+      return new JsonResponse([
+        'error' => 'not_found',
+        'error_description' => 'Subscription not found'
+      ], 404);
+    }
+
+    return new JsonResponse([
+      'active' => $subscription->pending == 0 ? true : false
+    ]);
+  }
+
 
   public function callback_deliver(ServerRequestInterface $request, ResponseInterface $response) {
     $query = $request->getQueryParams();

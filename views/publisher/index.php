@@ -35,7 +35,7 @@
           <h3>Sending subscription request...</h3>
         </div>
 
-        <div id="hub-response-details">
+        <div class="hidden" id="hub-response-details">
           <h3>Response from the hub:</h3>
           <pre id="subscribe-debug" class="debug"></pre>
         </div>
@@ -73,9 +73,18 @@
 </div>
 <script>
 var jwt;
+var verification_timer;
+var token;
 
 function start_discover_step() {
   if($("#topic_input").val()) {
+    // Reset the UI state
+    $("#notifications").addClass("hidden");
+    $("#notification-list").text('');
+    $("#step-active").addClass("hidden");
+    $("#step-subscribe-verify-waiting").addClass("hidden");
+
+
     $("#subscribe").addClass("loading");
     $("#step-hub").addClass("hidden");
     $("#step-hub-loading").removeClass("hidden");
@@ -114,14 +123,14 @@ function start_subscribe_step() {
     $("#step-subscribe-loading").addClass("hidden");
     $("#step-subscribe-verify-waiting").removeClass("hidden");
 
+    // Some hubs send the verification so quickly that this hasn't had a chance to subscribe yet
+    token = data.token;
     var socket = new EventSource('/streaming/sub?id='+data.token);
     socket.onmessage = function(event) {
+      console.log(event.data);
       var data = JSON.parse(event.data);
       if(data.text.type == 'active') {
-        $("#step-subscribe-verify-waiting").addClass("hidden");
-        $("#step-active").removeClass("hidden");
-        $("#notifications").removeClass("hidden");
-        $("#notifications h2").text("Subscribed to "+$("#self").text());
+        subscription_is_active();
       } else if(data.text.type == 'notification') {
         $("#setup").addClass("hidden");
         $("#notifications").removeClass("hidden");
@@ -130,11 +139,31 @@ function start_subscribe_step() {
         $("#notification-list").prepend($('<pre>').addClass('debug').text(body));
       }
     }
-  });
 
+    verification_timer = setTimeout(check_if_subscription_is_active, 500);
+  });
 
 }
 
+function check_if_subscription_is_active() {
+  $.get("/publisher/status?token="+token, function(data) {
+    if(data.active == true) {
+      subscription_is_active();
+    } else {
+      verification_timer = setTimeout(check_if_subscription_is_active, 2000);
+    }
+  });
+}
+
+function subscription_is_active() {
+  $("#step-subscribe-verify-waiting").addClass("hidden");
+  $("#step-active").removeClass("hidden");
+  $("#notifications").removeClass("hidden");
+  $("#notifications h2").text("Subscribed to "+$("#self").text());
+  if(verification_timer) {
+    clearTimeout(verification_timer);
+  }
+}
 
 
 $(function(){
