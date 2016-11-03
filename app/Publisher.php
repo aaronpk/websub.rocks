@@ -264,6 +264,10 @@ class Publisher {
       'body' => (string)$body
     ]);
 
+    $subscription->date_last_notification = date('Y-m-d H:i:s');
+    $subscription->notification_content_type = $request->getHeaderLine('Content-Type');
+    $subscription->notification_content = (string)$body;
+    $subscription->save();
 
     return new JsonResponse([
       'result' => 'ok'
