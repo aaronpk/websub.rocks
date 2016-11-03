@@ -11,7 +11,7 @@
 
     <div class="ui form">
       <div class="ui fluid action input">
-        <input type="url" id="topic_input" placeholder="https://example.com/" value="https://pk.tunnlr.xyz/">
+        <input type="url" id="topic_input" placeholder="https://example.com/">
         <button class="ui button" id="subscribe" type="submit">Subscribe</button>
       </div>
     </div>
