@@ -58,7 +58,7 @@
 
     <div class="hidden" id="step-hub-error">
       <div class="ui error message">
-        Your <code>hub</code> and <code>self</code> were not found. Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/pubsub/#discovery">Discovery</a> for more information.
+        <span class="description"></span> Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/pubsub/#discovery">Discovery</a> for more information.
       </div>
     </div>
 
@@ -104,6 +104,15 @@ function start_discover_step() {
         start_subscribe_step();
       } else {
         $("#step-hub").addClass("hidden");
+        var desc = "";
+        if(data.hub && !data.self) {
+          desc = "Both a <code>self</code> and <code>hub</code> value are required. We didn't find a <code>self</code> value on your page, but we did find a <code>hub</code>.";
+        } else if(!data.hub && data.self) {
+          desc = "Both a <code>self</code> and <code>hub</code> value are required. We didn't find a <code>hub</code> value on your page, but we did find a <code>self</code>.";
+        } else {
+          desc = "We didn't find a <code>hub</code> or <code>self</code> on your page.";
+        }
+        $("#step-hub-error .description").html(desc);
         $("#step-hub-error").removeClass("hidden");
       }
     });
