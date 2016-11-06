@@ -54,6 +54,8 @@ section.content {
   border: 1px #abcce9 solid;
   background: #fff;
   margin-bottom: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
 }
 
 section.content.code {

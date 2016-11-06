@@ -4,17 +4,14 @@
 
 <div class="single-column">
 
-  <? foreach($posts as $post): ?>
-    <section class="content h-entry">
+  <section class="content">
+    <p>Congrats! Now that your subscription is active, you can generate new posts that will be delivered to your subscriber! Click the button below to add a new post to this feed, and send a notification to subscribers of this feed.</p>
 
-      <div class="e-content p-name"><?= $post['content'] ?></div>
-      <div class="p-author h-card"><?= $post['author'] ?></div>
-      <time class="dt-published" datetime="<?= date('c', strtotime($post['published'])) ?>">
-        <?= date('F j, Y g:ia', strtotime($post['published'])) ?>
-      </time>
+    <a href="/subscriber/<?= $num ?>/<?= $token ?>/publish" class="ui blue button" id="subscriber-new-post-btn">Create New Post</a>
+  </section>
 
-    </section>
-    
-  <? endforeach ?>
+  <div id="subscriber-post-list">
+    <? $this->insert('subscriber/post-list', ['posts'=>$posts]) ?>
+  </div>
 
 </div>

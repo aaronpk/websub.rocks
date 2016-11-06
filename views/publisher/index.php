@@ -25,8 +25,8 @@
     <div class="hidden" id="step-hub">
       <div class="ui success message">
         <h3>Found the Hub!</h3>
-        <b>hub:</b> <span id="hub"></span><br>
-        <b>self:</b> <span id="self"></span><br>
+        <b>hub:</b> <span id="hub" class="small"></span><br>
+        <b>self:</b> <span id="self" class="small"></span><br>
       </div>
 
       <div class="hidden" id="step-subscribe">

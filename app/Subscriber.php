@@ -25,9 +25,12 @@ class Subscriber {
 
     $token = random_string(20);
 
+    $topic = Config::$base . 'subscriber/' . $num . '/' . $token;
+
     $response->getBody()->write(view('subscriber/'.$num, [
       'title' => 'PubSub Rocks!',
       'token' => $token,
+      'topic' => $topic,
     ]));
     return $response;
   }
@@ -39,13 +42,18 @@ class Subscriber {
 
     streaming_publish($token, [
       'type' => 'discover',
+      'method' => 'HEAD',
     ]);
 
     self::set_up_posts_in_feed($token);
 
-    return $response
-      ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
-      ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+    if($num == 100) {
+      return $response
+        ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
+        ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+    } else {
+      return $response;
+    }
   }
 
   public function get_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
@@ -55,6 +63,7 @@ class Subscriber {
 
     streaming_publish($token, [
       'type' => 'discover',
+      'method' => 'GET',
     ]);
 
     self::set_up_posts_in_feed($token);
@@ -63,12 +72,17 @@ class Subscriber {
 
     $response->getBody()->write(view('subscriber/feed', [
       'title' => 'PubSub Rocks!',
+      'num' => $num,
       'token' => $token,
       'posts' => $posts,
     ]));
-    return $response
-      ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
-      ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+    if($num == 100) {
+      return $response
+        ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
+        ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+    } else {
+      return $response;
+    }
   }
 
   public function hub(ServerRequestInterface $request, ResponseInterface $response, $args) {
@@ -80,9 +94,7 @@ class Subscriber {
 
     // The hub doesn't exist until there are posts in it. Discovering the hub will create posts.
     if(count($posts) == 0) {
-      return new JsonResponse([
-        'error' => 'not_found'
-      ], 404);
+      return self::hub_error($token, ['error' => 'not_found'], 404);
     }
 
     $params = $request->getParsedBody();
@@ -105,7 +117,7 @@ class Subscriber {
           else
             $description = 'The request is missing the callback and topic parameters';
 
-          return new JsonResponse([
+          return self::hub_error($token, [
             'error' => 'missing_params',
             'error_description' => $description
           ], 400);
@@ -113,7 +125,7 @@ class Subscriber {
 
         // Check that callback is a valid URL
         if(($error=validate_url($params['hub_callback'])) !== false) {
-          return new JsonResponse([
+          return self::hub_error($token, [
             'error' => 'invalid_callback',
             'error_description' => 'There was an error with the callback URL: ' . $error
           ], 400);
@@ -121,7 +133,7 @@ class Subscriber {
 
         // Check that the hub and topic match
         if($params['hub_topic'] != Config::$base . 'subscriber/' . $num . '/' . $token) {
-          return new JsonResponse([
+          return self::hub_error($token, [
             'error' => 'invalid_topic',
             'error_description' => 'The topic provided is not allowed at this hub.'
           ], 400);
@@ -130,7 +142,7 @@ class Subscriber {
         // If there is a secret, check that it's <200 bytes
         if(array_key_exists('hub_secret', $params)) {
           if(strlen($params['hub_secret']) > 200) {
-            return new JsonResponse([
+          return self::hub_error($token, [
               'error' => 'invalid_secret',
               'error_description' => 'The secret must be less than 200 bytes.'
             ], 400);
@@ -162,7 +174,7 @@ class Subscriber {
           $subscriber->save();
         } else {
           if(!$subscriber) {
-            return new JsonResponse([
+            return self::hub_error($token, [
               'error' => 'invalid_subscription',
               'error_description' => 'No subscription was found for the given topic and callback.'
             ], 404);
@@ -184,18 +196,26 @@ class Subscriber {
           $subscriber->challenge_response_code = $result['code'];
           $subscriber->challenge_response = $result['debug'];
           $subscriber->save();
+          streaming_publish($token, [
+            'type' => 'success',
+            'mode' => $mode,
+            'callback_response' => $result['debug'],
+            'topic' => $params['hub_topic'],
+          ]);
           return $response->withStatus(202);
         } else {
           // Normally the hub would check this asynchronously so 202 would always be returned.
           // This debug hub checks the challenge synchronously so it already knows that it failed now.
-          return new JsonResponse([
+          return self::hub_error($token, [
             'error' => 'verification_failed',
-            'code' => $result['code']
+            'error_description' => 'The callback URL did not confirm the verification request.',
+            'code' => $result['code'],
+            'callback_response' => $result['debug']
           ], 400);
         }
 
       default:
-        return new JsonResponse([
+        return self::hub_error($token, [
           'error' => 'invalid_mode'
         ], 400);
     }
@@ -223,10 +243,21 @@ class Subscriber {
     
     $delivered = Hub::publish($num, $token);
 
+    $posts = self::get_posts_in_feed($token);
+    $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
+    $html = $templates->render('subscriber/post-list', ['posts'=>$posts]);
+
     return new JsonResponse([
       'post' => $data,
-      'delivered' => $delivered
+      'delivered' => $delivered,
+      'html' => $html,
     ]);
+  }
+
+  private static function hub_error($token, $params, $code=400) {
+    $params['type'] = 'error';
+    streaming_publish($token, $params);
+    return new JsonResponse($params, $code);
   }
 
   private static function set_up_posts_in_feed($token) {

@@ -22,6 +22,7 @@
   <a class="item" href="/"><img src="/assets/pubsub-rocks-icon.png"></a>
   <a class="item" href="/">Home</a>
   <a class="item" href="/publisher">Publisher</a>
+  <a class="item" href="/subscriber">Subscriber</a>
   <?php if(is_logged_in()): ?>
     <a class="item" href="/dashboard">Dashboard</a>
     <div class="right menu">
