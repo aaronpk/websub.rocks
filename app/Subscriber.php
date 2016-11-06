@@ -161,13 +161,19 @@ class Subscriber {
         // Send the verification to the callback URL
         $result = Hub::verify($num, $token, 'subscribe', $params['hub_callback'], $subscriber->challenge);
 
-        // TODO: check verification results
-        echo "-------\n";
-        print_r($result);
-
-        die();
-        return $response->withStatus(202);
-
+        // Check that the subscriber echo'd back the challenge
+        if(floor($result['code']/100) == 2 && $result['body'] == $subscriber->challenge) {
+          $subscriber->active = 1;
+          $subscriber->challenge_response_code = $result['code'];
+          $subscriber->challenge_response = $result['debug'];
+          $subscriber->date_expires = date('Y-m-d H:i:s', time() + Hub::$LEASE_SECONDS);
+          $subscriber->save();
+          return $response->withStatus(202);
+        } else {
+          // Normally the hub would check this asynchronously so 202 would always be returned.
+          // This debug hub checks the challenge synchronously so it already knows that it failed now.
+          return $response->withStatus(400);
+        }
 
       case 'unsubscribe':
 
@@ -200,10 +206,11 @@ class Subscriber {
 
     $data = self::add_post_to_feed($token, $post);
     
-    Hub::publish($num, $token);
+    $delivered = Hub::publish($num, $token);
 
     return new JsonResponse([
-      'post' => $data
+      'post' => $data,
+      'delivered' => $delivered
     ]);
   }
 

@@ -15,6 +15,8 @@ class Hub {
       ->where('active', 1)
       ->find_many();
 
+    $delivered = [];
+
     if(count($subscriptions)) {
       // Render the page content to send to the subscriber
       $html = self::render_page($num, $token);
@@ -36,13 +38,19 @@ class Hub {
           }
 
           $sub->notification_response_code = $response['code'];
-          $sub->notification_response = $response['body'];
+          $sub->notification_response = $response['debug'];
 
           $sub->save();
+
+          $delivered[] = [
+            'subscriber' => $sub->callback,
+            'code' => $response['code']
+          ];
         }
       }
-
     }
+
+    return $delivered;
   }
 
   public static function verify($num, $token, $mode, $callback, $challenge) {
@@ -55,9 +63,10 @@ class Hub {
       'hub.challenge' => $challenge,
       'hub.lease_seconds' => self::$LEASE_SECONDS
     ];
+    // Parse the URL
+    $callback = add_query_params_to_url($callback, $params);
 
-    $response = $client->get($callback . '?hub.challenge='.$challenge);
-    return $response;
+    return $client->get($callback);
   }
 
   private static function deliver($num, $token, $callback, $content, $sig) {
@@ -74,8 +83,7 @@ class Hub {
     }
 
     $client = new HTTP();
-    $response = $client->post($callback, $content, $headers);
-    return $response;
+    return $client->post($callback, $content, $headers);
   }
 
   private static function render_page($num, $token) {

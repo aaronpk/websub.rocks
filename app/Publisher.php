@@ -167,8 +167,9 @@ class Publisher {
 
     return new JsonResponse([
       'result' => $result,
-      'token' => $subscription->token,
-      'debug' => $subscription->subscription_response_body
+      'token' => ($result == 'success' ? $subscription->token : false),
+      'debug' => $subscription->subscription_response_body,
+      'code' => $res['code']
     ]);
   }
 

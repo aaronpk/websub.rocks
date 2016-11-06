@@ -50,7 +50,12 @@
             <h3>Subscription Active!</h3>
             <p>The hub verified the subscription request and the subscription is now active.</p>
           </div>
-
+        </div>
+        <div class="hidden" id="step-subscribe-error">
+          <div class="ui error message">
+            <h3>Subscription Failed!</h3>
+            <p>The hub did not acknowledge the subscription request. The response code was <code></code>.</p>
+          </div>
         </div>
 
       </div>
@@ -83,6 +88,7 @@ function start_discover_step() {
     $("#notification-list").text('');
     $("#step-active").addClass("hidden");
     $("#step-subscribe-verify-waiting").addClass("hidden");
+    $("#step-subscribe-error").addClass("hidden");
 
 
     $("#subscribe").addClass("loading");
@@ -121,6 +127,7 @@ function start_discover_step() {
 
 function start_subscribe_step() {
   $("#step-subscribe-loading").removeClass("hidden");
+  $("#step-subscribe-error").addClass("hidden");
 
   $.post("/publisher/subscribe", {
     jwt: jwt
@@ -132,24 +139,31 @@ function start_subscribe_step() {
     $("#step-subscribe-loading").addClass("hidden");
     $("#step-subscribe-verify-waiting").removeClass("hidden");
 
-    // Some hubs send the verification so quickly that this hasn't had a chance to subscribe yet
-    token = data.token;
-    var socket = new EventSource('/streaming/sub?id='+data.token);
-    socket.onmessage = function(event) {
-      console.log(event.data);
-      var data = JSON.parse(event.data);
-      if(data.text.type == 'active') {
-        subscription_is_active();
-      } else if(data.text.type == 'notification') {
-        $("#setup").addClass("hidden");
-        $("#notifications").removeClass("hidden");
-        var body = data.text.body;
-        if(body == "") body = "(The hub did not include any content in the notification)";
-        $("#notification-list").prepend($('<pre>').addClass('debug').text(body));
+    // If the hub did not acknowledge the subscription request, stop now
+    if(data.result == 'success') {
+      // Some hubs send the verification so quickly that this hasn't had a chance to subscribe yet
+      token = data.token;
+      var socket = new EventSource('/streaming/sub?id='+data.token);
+      socket.onmessage = function(event) {
+        console.log(event.data);
+        var data = JSON.parse(event.data);
+        if(data.text.type == 'active') {
+          subscription_is_active();
+        } else if(data.text.type == 'notification') {
+          $("#setup").addClass("hidden");
+          $("#notifications").removeClass("hidden");
+          var body = data.text.body;
+          if(body == "") body = "(The hub did not include any content in the notification)";
+          $("#notification-list").prepend($('<pre>').addClass('debug').text(body));
+        }
       }
-    }
 
-    verification_timer = setTimeout(check_if_subscription_is_active, 500);
+      verification_timer = setTimeout(check_if_subscription_is_active, 500);
+    } else {
+      $("#step-subscribe-verify-waiting").addClass("hidden");
+      $("#step-subscribe-error code").text(data.code);
+      $("#step-subscribe-error").removeClass("hidden");
+    }
   });
 
 }

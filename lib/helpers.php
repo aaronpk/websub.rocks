@@ -94,6 +94,15 @@ if(!function_exists('http_build_url')) {
   }
 }
 
+function add_query_params_to_url($url, $params) {
+  $url = parse_url($url);
+  if(!array_key_exists('query', $url))
+    $url['query'] = http_build_query($params);
+  else
+    $url['query'] .= '&' . http_build_query($params);
+  return http_build_url($url);
+}
+
 function validate_url($url) {
   $url = parse_url($url);
 
