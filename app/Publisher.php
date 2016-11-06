@@ -7,7 +7,7 @@ use Zend\Diactoros\Response\JsonResponse;
 use ORM, Config;
 use DOMXPath;
 use Rocks\HTTP;
-use \Firebase\JWT\JWT;
+use Firebase\JWT\JWT;
 
 class Publisher {
 

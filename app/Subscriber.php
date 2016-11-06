@@ -91,6 +91,7 @@ class Subscriber {
 
     switch($mode) {
       case 'subscribe':
+      case 'unsubscribe':
 
         // Required parameters
         if(!array_key_exists('hub_callback', $params)
@@ -139,45 +140,59 @@ class Subscriber {
         // TODO: lease_seconds
 
 
-        // Create the subscriber if it doesn't yet exist
         $subscriber = ORM::for_table('subscriber_hub')
           ->where('test', $num)->where('token', $token) # this identifies the topic
           ->where('callback', $params['hub_callback'])  # the callback URL
           ->find_one();
-        if(!$subscriber) {
-          $subscriber = ORM::for_table('subscriber_hub')->create();
-          $subscriber->test = $num;
-          $subscriber->token = $token;
-          $subscriber->date_created = date('Y-m-d H:i:s');
-          $subscriber->callback = $params['hub_callback'];
-          if(array_key_exists('hub_secret', $params))
-            $subscriber->secret = $params['hub_secret'];
+
+        if($mode == 'subscribe') {
+          // Create the subscriber if it doesn't yet exist
+          if(!$subscriber) {
+            $subscriber = ORM::for_table('subscriber_hub')->create();
+            $subscriber->test = $num;
+            $subscriber->token = $token;
+            $subscriber->date_created = date('Y-m-d H:i:s');
+            $subscriber->callback = $params['hub_callback'];
+            if(array_key_exists('hub_secret', $params))
+              $subscriber->secret = $params['hub_secret'];
+          }
+
+          // Generate a new challenge
+          $subscriber->challenge = random_string(20);
+          $subscriber->save();
+        } else {
+          if(!$subscriber) {
+            return new JsonResponse([
+              'error' => 'invalid_subscription',
+              'error_description' => 'No subscription was found for the given topic and callback.'
+            ], 404);
+          }
         }
 
-        // Generate a new challenge
-        $subscriber->challenge = random_string(20);
-        $subscriber->save();
-
         // Send the verification to the callback URL
-        $result = Hub::verify($num, $token, 'subscribe', $params['hub_callback'], $subscriber->challenge);
+        $result = Hub::verify($num, $token, $mode, $params['hub_callback'], $subscriber->challenge);
 
         // Check that the subscriber echo'd back the challenge
         if(floor($result['code']/100) == 2 && $result['body'] == $subscriber->challenge) {
-          $subscriber->active = 1;
+          if($mode == 'subscribe') {
+            $subscriber->active = 1;
+            $subscriber->date_expires = date('Y-m-d H:i:s', time() + Hub::$LEASE_SECONDS);
+          } else {
+            $subscriber->active = 0;
+            $subscriber->date_expires = date('Y-m-d H:i:s');
+          }
           $subscriber->challenge_response_code = $result['code'];
           $subscriber->challenge_response = $result['debug'];
-          $subscriber->date_expires = date('Y-m-d H:i:s', time() + Hub::$LEASE_SECONDS);
           $subscriber->save();
           return $response->withStatus(202);
         } else {
           // Normally the hub would check this asynchronously so 202 would always be returned.
           // This debug hub checks the challenge synchronously so it already knows that it failed now.
-          return $response->withStatus(400);
+          return new JsonResponse([
+            'error' => 'verification_failed',
+            'code' => $result['code']
+          ], 400);
         }
-
-      case 'unsubscribe':
-
-
 
       default:
         return new JsonResponse([
