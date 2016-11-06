@@ -94,6 +94,33 @@ if(!function_exists('http_build_url')) {
   }
 }
 
+function validate_url($url) {
+  $url = parse_url($url);
+
+  if(!$url) {
+    return 'There was an error parsing the URL';
+  }
+
+  if(!isset($url['scheme'])) {
+    return 'The URL was missing a scheme.';
+  }
+
+  if(!in_array($url['scheme'], ['http','https'])) {
+    return 'The URL must have a scheme of either http or https.';
+  }
+
+  if(!isset($url['host'])) {
+    return 'The URL was missing a hostname.';
+  }
+
+  $ip=gethostbyname($url['host']);
+  if(!$ip || $url['host']==$ip) {
+    return 'No DNS entry was found.';
+  }
+
+  return false;
+}
+
 function result_icon($passed, $id=false) {
   if($passed == 1) {
     return '<span id="'.$id.'" class="ui green circular label">&#x2714;</span>';

@@ -141,3 +141,22 @@ section.content textarea {
 #report-details td {
   padding: 2px;
 }
+
+
+
+section.h-entry .e-content {
+  font-size: 1.25em;
+  line-height: 1.3em;
+}
+section.h-entry .p-author {
+  text-align: right;
+  font-style: italic;
+}
+section.h-entry .p-author:before {
+  content: "- ";
+}
+section.h-entry time {
+  color: #888;
+  font-size: 0.75em;
+}
+
