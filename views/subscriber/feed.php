@@ -10,8 +10,9 @@
     <a href="/subscriber/<?= $num ?>/<?= $token ?>/publish" class="ui blue button" id="subscriber-new-post-btn">Create New Post</a>
   </section>
 
-  <div id="subscriber-post-list">
-    <? $this->insert('subscriber/post-list', ['posts'=>$posts]) ?>
+  <div id="subscriber-post-list" class="h-feed">
+    <span class="p-name hidden">PubSub.rocks Test <?= $num ?></span>
+    <? $this->insert('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]) ?>
   </div>
 
 </div>

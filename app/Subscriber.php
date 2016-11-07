@@ -245,7 +245,7 @@ class Subscriber {
 
     $posts = self::get_posts_in_feed($token);
     $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
-    $html = $templates->render('subscriber/post-list', ['posts'=>$posts]);
+    $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
 
     return new JsonResponse([
       'post' => $data,
