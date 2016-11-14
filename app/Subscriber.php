@@ -25,7 +25,7 @@ class Subscriber {
 
     $token = random_string(20);
 
-    $topic = Config::$base . 'subscriber/' . $num . '/' . $token;
+    $topic = Config::$base . 'blog/' . $num . '/' . $token;
 
     $response->getBody()->write(view('subscriber/'.$num, [
       'title' => 'PubSub Rocks!',
@@ -49,8 +49,8 @@ class Subscriber {
 
     if($num == 100) {
       return $response
-        ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
-        ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+        ->withHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'>; rel="self"')
+        ->withAddedHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'/hub>; rel="hub"');
     } else {
       return $response;
     }
@@ -78,8 +78,8 @@ class Subscriber {
     ]));
     if($num == 100) {
       return $response
-        ->withHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'>; rel="self"')
-        ->withAddedHeader('Link', '<'.Config::$base.'subscriber/'.$num.'/'.$token.'/hub>; rel="hub"');
+        ->withHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'>; rel="self"')
+        ->withAddedHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'/hub>; rel="hub"');
     } else {
       return $response;
     }
@@ -132,7 +132,7 @@ class Subscriber {
         }
 
         // Check that the hub and topic match
-        if($params['hub_topic'] != Config::$base . 'subscriber/' . $num . '/' . $token) {
+        if($params['hub_topic'] != Config::$base . 'blog/' . $num . '/' . $token) {
           return self::hub_error($token, [
             'error' => 'invalid_topic',
             'error_description' => 'The topic provided is not allowed at this hub.'

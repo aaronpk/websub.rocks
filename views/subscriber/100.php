@@ -54,7 +54,6 @@ var step = 'discover';
 
 socket.onmessage = function(event) {
   var data = JSON.parse(event.data);
-  console.log(data.text);
   if(step == 'subscribe') {
     if(data.text.type == 'error') {
       $("#step-subscribe-error code").text(data.text.error);
