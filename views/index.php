@@ -1,11 +1,11 @@
 <?php $this->layout('layout', ['title' => $title]); ?>
 
 <div class="single-column">
-  <div id="header-graphic"><img src="/assets/pubsub-rocks.png"></div>
+  <div id="header-graphic"><img src="/assets/websub-rocks.png"></div>
 
   <section class="content">
     <h3>About this site</h3>
-    <p><b><i>PubSub Rocks!</i></b> is a validator to help you test your <a href="https://www.w3.org/TR/pubsub/">PubSub</a> implementation. Several kinds of tests are available on the site.</p>
+    <p><b><i>WebSub Rocks!</i></b> is a validator to help you test your <a href="https://www.w3.org/TR/websub/">WebSub</a> implementation. Several kinds of tests are available on the site.</p>
   </section>
 
   <section class="content">
@@ -29,7 +29,7 @@
   </section>
 
   <section class="content small">
-    <p>This code is <a href="https://github.com/aaronpk/pubsub.rocks">open source</a>. Feel free to <a href="https://github.com/aaronpk/pubsub.rocks/issues">file an issue</a> if you notice any errors.</p>
+    <p>This code is <a href="https://github.com/aaronpk/websub.rocks">open source</a>. Feel free to <a href="https://github.com/aaronpk/websub.rocks/issues">file an issue</a> if you notice any errors.</p>
   </section>
 
 </div>

@@ -11,7 +11,7 @@
   </section>
 
   <div id="subscriber-post-list" class="h-feed">
-    <span class="p-name hidden">PubSub.rocks Test <?= $num ?></span>
+    <span class="p-name hidden">WebSub.rocks Test <?= $num ?></span>
     <? $this->insert('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]) ?>
   </div>
 

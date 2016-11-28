@@ -34,12 +34,12 @@ class Auth {
     $mg->sendMessage(Config::$mailgun['domain'], [
       'from'     => Config::$mailgun['from'],
       'to'       => $user->email, 
-      'subject'  => 'Your pubsub.rocks Login URL',
-      'text'     => "Click on the link below to sign in to pubsub.rocks\n\n$login_url\n"
+      'subject'  => 'Your websub.rocks Login URL',
+      'text'     => "Click on the link below to sign in to websub.rocks\n\n$login_url\n"
     ]);
 
     $response->getBody()->write(view('auth-email', [
-      'title' => 'Sign In - PubSub Rocks!',
+      'title' => 'Sign In - WebSub Rocks!',
     ]));
     return $response;
   }
@@ -58,7 +58,7 @@ class Auth {
 
     if(!$user) {
       $response->getBody()->write(view('auth-error', [
-        'title' => 'Error - PubSub Rocks!',
+        'title' => 'Error - WebSub Rocks!',
         'error' => 'Invalid Link',
         'error_description' => 'The link you followed is invalid or has expired. Please try again.',
       ]));

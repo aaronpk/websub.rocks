@@ -17,7 +17,7 @@ class Publisher {
     session_setup();
     
     $response->getBody()->write(view('publisher/index', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }

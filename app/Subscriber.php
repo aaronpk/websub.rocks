@@ -14,7 +14,7 @@ class Subscriber {
     session_setup();
     
     $response->getBody()->write(view('subscriber/index', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }
@@ -28,7 +28,7 @@ class Subscriber {
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
 
     $response->getBody()->write(view('subscriber/'.$num, [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
       'token' => $token,
       'topic' => $topic,
     ]));
@@ -71,7 +71,7 @@ class Subscriber {
     $posts = self::get_posts_in_feed($token);
 
     $response->getBody()->write(view('subscriber/feed', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
       'num' => $num,
       'token' => $token,
       'posts' => $posts,
@@ -261,7 +261,7 @@ class Subscriber {
   }
 
   private static function set_up_posts_in_feed($token) {
-    $key = 'pubsub.rocks::feed::'.$token;
+    $key = 'websub.rocks::feed::'.$token;
     if(redis()->llen($key) == 0) {
       $quotes = ORM::for_table('quotes')->order_by_expr('RAND()')->limit(3)->find_many();
       foreach($quotes as $quote) {
@@ -272,12 +272,12 @@ class Subscriber {
   }
 
   private static function touch_feed($token) {
-    $key = 'pubsub.rocks::feed::'.$token;
+    $key = 'websub.rocks::feed::'.$token;
     redis()->expire($key, 86400);
   }
 
   private static function add_post_to_feed($token, $post) {
-    $key = 'pubsub.rocks::feed::'.$token;
+    $key = 'websub.rocks::feed::'.$token;
     $data = [
       'id' => $post->id,
       'author' => $post->author,
@@ -291,7 +291,7 @@ class Subscriber {
   }
 
   private static function get_posts_in_feed($token) {
-    $key = 'pubsub.rocks::feed::'.$token;
+    $key = 'websub.rocks::feed::'.$token;
     $len = redis()->llen($key);
     $items = redis()->lrange($key, 0, $len-1);
     return array_map(function($i){ return json_decode($i, true); }, $items);

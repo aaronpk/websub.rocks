@@ -63,7 +63,7 @@
 
     <div class="hidden" id="step-hub-error">
       <div class="ui error message">
-        <span class="description"></span> Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/pubsub/#discovery">Discovery</a> for more information.
+        <span class="description"></span> Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/websub/#discovery">Discovery</a> for more information.
       </div>
     </div>
 

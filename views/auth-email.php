@@ -3,7 +3,7 @@
                     ]); ?>
 
 <div class="single-column">
-  <div id="header-graphic"><img src="/assets/pubsub-rocks.png"></div>
+  <div id="header-graphic"><img src="/assets/websub-rocks.png"></div>
 
   <div class="ui success message">
     <div class="header">Great!</div>

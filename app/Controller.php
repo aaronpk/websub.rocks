@@ -17,7 +17,7 @@ class Controller {
     session_setup();
     
     $response->getBody()->write(view('index', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }
@@ -32,7 +32,7 @@ class Controller {
     $user = logged_in_user();
 
     $response->getBody()->write(view('dashboard', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }

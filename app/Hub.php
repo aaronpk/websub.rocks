@@ -12,7 +12,7 @@ class Hub {
     session_setup();
     
     $response->getBody()->write(view('hub/index', [
-      'title' => 'PubSub Rocks!',
+      'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }

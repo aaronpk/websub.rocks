@@ -19,7 +19,7 @@
 <body<?= is_logged_in() ? ' class="logged-in"' : '' ?>>
 
 <div class="ui top fixed menu">
-  <a class="item" href="/"><img src="/assets/pubsub-rocks-icon.png"></a>
+  <a class="item" href="/"><img src="/assets/websub-rocks-icon.png"></a>
   <a class="item" href="/">Home</a>
   <a class="item" href="/publisher">Publisher</a>
   <a class="item" href="/subscriber">Subscriber</a>

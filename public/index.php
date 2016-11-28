@@ -40,6 +40,7 @@ $route->map('GET', '/blog/{num}/{token}', 'App\\Subscriber::get_feed');
 $route->map('GET', '/subscriber/{num}', 'App\\Subscriber::get_test');
 
 $route->map('GET', '/hub', 'App\\Hub::index');
+$route->map('GET', '/hub/{num}', 'App\\Hub::get_test');
 
 
 
