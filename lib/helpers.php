@@ -159,3 +159,13 @@ function html_to_dom_document($html) {
   return $doc;
 }
 
+function xml_to_dom_document($xml) {
+  // Parse the source body as XML
+  $doc = new DOMDocument();
+  libxml_use_internal_errors(true); # suppress parse errors and warnings
+  // $body = mb_convert_encoding($xml, 'HTML-ENTITIES', mb_detect_encoding($xml));
+  $body = $xml;
+  $doc->loadXML($body);
+  libxml_clear_errors();
+  return $doc;
+}

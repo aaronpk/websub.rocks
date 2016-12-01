@@ -32,19 +32,19 @@ class Publisher {
     $topic = $this->client->get($params['topic']);
 
     $http = [
-      'hub' => false,
-      'self' => false,
+      'hub' => [],
+      'self' => [],
     ];
     $doc = [
-      'hub' => false,
-      'self' => false,
+      'hub' => [],
+      'self' => [],
       'type' => false,
     ];
     if(array_key_exists('hub', $topic['rels'])) {
-      $http['hub'] = $topic['rels']['hub'][0];
+      $http['hub'] = $topic['rels']['hub'];
     }
     if(array_key_exists('self', $topic['rels'])) {
-      $http['self'] = $topic['rels']['self'][0];
+      $http['self'] = $topic['rels']['self'];
     }
 
     if(array_key_exists('Content-Type', $topic['headers'])) {
@@ -52,31 +52,46 @@ class Publisher {
 
         $mf2 = \Mf2\parse($topic['body'], $topic_url);
         if(array_key_exists('hub', $mf2['rels'])) {
-          $doc['hub'] = $mf2['rels']['hub'][0];
+          $doc['hub'] = $mf2['rels']['hub'];
         }
         if(array_key_exists('self', $mf2['rels'])) {
-          $doc['self'] = $mf2['rels']['self'][0];
+          $doc['self'] = $mf2['rels']['self'];
         }
         $doc['type'] = 'html';
 
       } else if(preg_match('|xml|', $topic['headers']['Content-Type'])) {
 
-        $dom = html_to_dom_document($topic['body']);
+        $dom = xml_to_dom_document($topic['body']);
         $xpath = new DOMXPath($dom);
-        foreach($xpath->query('//feed/link[@href]') as $href) {
+        $xpath->registerNamespace('atom', 'http://www.w3.org/2005/Atom');
+
+        if($xpath->query('/rss')->length) {
+          $doc['type'] = 'rss';
+        } elseif($xpath->query('/feed')->length) {
+          $doc['type'] = 'atom';
+        }
+
+        // Look for atom link elements in the feed        
+        foreach($xpath->query('/atom:feed/atom:link[@href]') as $href) {
           $rel = $href->getAttribute('rel');
           $url = $href->getAttribute('href');
           if($rel == 'hub' && !$doc['hub']) {
-            $doc['hub'] = $url;
+            $doc['hub'][] = $url;
           } else if($rel == 'self') {
-            $doc['self'] = $url;
+            $doc['self'][] = $url;
           }
         }
 
-        if($xpath->query('//rss')->length)
-          $doc['type'] = 'rss';
-        else if($xpath->query('//feed')->length)
-          $doc['type'] = 'atom';
+        // Some RSS feeds include the link element as an atom attribute
+        foreach($xpath->query('/rss/channel/atom:link[@href]') as $href) {
+          $rel = $href->getAttribute('rel');
+          $url = $href->getAttribute('href');
+          if($rel == 'hub' && !$doc['hub']) {
+            $doc['hub'][] = $url;
+          } else if($rel == 'self') {
+            $doc['self'][] = $url;
+          }
+        }
 
       }
     }
@@ -129,16 +144,27 @@ class Publisher {
       ], 400);
     }
 
+    // There will only be one topic in the payload since they would have seen an error otherwise
+    $topic = $data['topic'][0];
+
+    // Ensure the specified hub is in the JWT
+    $hub = $params['hub'];
+    if(!in_array($params['hub'], $data['hub'])) {
+      return new JsonResponse([
+        'error' => 'invalid_request'
+      ], 400);
+    }
+
     // Save to the DB so the subscription gets a unique token
     $subscription = ORM::for_table('subscriptions')
-      ->where('hub', $data['hub'])
-      ->where('topic', $data['topic'])
+      ->where('hub', $hub)
+      ->where('topic', $topic)
       ->find_one();
     if(!$subscription) {
       $subscription = ORM::for_table('subscriptions')->create();
       $subscription->token = random_string(20);
-      $subscription->hub = $data['hub'];
-      $subscription->topic = $data['topic'];
+      $subscription->hub = $hub;
+      $subscription->topic = $topic;
       $subscription->date_created = date('Y-m-d H:i:s');
     }
     $subscription->date_subscription_requested = date('Y-m-d H:i:s');
@@ -146,10 +172,10 @@ class Publisher {
     $subscription->save();
 
     // Subscribe to the hub
-    $res = $this->client->post($data['hub'], http_build_query([
+    $res = $this->client->post($hub, http_build_query([
       'hub.callback' => Config::$base . 'publisher/callback?token='.$subscription->token,
       'hub.mode' => 'subscribe',
-      'hub.topic' => $data['topic'],
+      'hub.topic' => $topic,
       'hub.lease_seconds' => 7200
     ]));
 
@@ -169,6 +195,8 @@ class Publisher {
       'result' => $result,
       'token' => ($result == 'success' ? $subscription->token : false),
       'debug' => $subscription->subscription_response_body,
+      'error' => $res['error'],
+      'error_description' => $res['error_description'],
       'code' => $res['code']
     ]);
   }

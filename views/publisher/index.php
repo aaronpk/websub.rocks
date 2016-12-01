@@ -22,6 +22,15 @@
       <h3>Discovering the hub...</h3>
     </div>
 
+    <div class="hidden" id="step-choose-hub">
+      <div class="ui yellow message">
+        <h3>Multiple Hubs Found</h3>
+        <p>Choose the hub you want to subscribe to. In a production system, subscribers will subscribe to one or more hubs of their choosing.</p>
+        <ul>
+        </ul>
+      </div>
+    </div>
+
     <div class="hidden" id="step-hub">
       <div class="ui success message">
         <h3>Found the Hub!</h3>
@@ -63,7 +72,7 @@
 
     <div class="hidden" id="step-hub-error">
       <div class="ui error message">
-        <span class="description"></span> Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/websub/#discovery">Discovery</a> for more information.
+        <span class="description"></span> <span class="discovery">Ensure your page has either HTTP <code>Link</code> headers or HTML or XML <code>&lt;link&gt;</code> tags indicating your hub and self URLs. See <a href="https://www.w3.org/TR/websub/#discovery">Discovery</a> for more information.</span>
       </div>
     </div>
 
@@ -78,6 +87,8 @@
 </div>
 <script>
 var jwt;
+var hub;
+var topic;
 var verification_timer;
 var token;
 
@@ -98,17 +109,12 @@ function start_discover_step() {
     $.post("/publisher/discover", {
       topic: $("#topic_input").val()
     }, function(data){ 
+      console.log(data);
+
       $("#subscribe").removeClass("loading");
       $("#step-hub-loading").addClass("hidden");
-      if(data.hub && data.self) {
-        $("#hub").text(data.hub);
-        $("#self").text(data.self);
-        $("#step-hub").removeClass("hidden");
-        $("#step-hub-error").addClass("hidden");
-        $("#step-subscribe").removeClass("hidden");
-        jwt = data.jwt;
-        start_subscribe_step();
-      } else {
+      if(!data.hub || !data.self) {
+        // If either hub or self were missing, show an error
         $("#step-hub").addClass("hidden");
         var desc = "";
         if(data.hub && !data.self) {
@@ -118,19 +124,60 @@ function start_discover_step() {
         } else {
           desc = "We didn't find a <code>hub</code> or <code>self</code> on your page.";
         }
+        $("#step-hub-error .discovery").removeClass("hidden");
         $("#step-hub-error .description").html(desc);
         $("#step-hub-error").removeClass("hidden");
+      } else if(data.self.length > 1) {
+        // If more than one self was specified, show an error
+        $("#step-hub").addClass("hidden");
+        $("#step-hub-error .description").html("Your page specified multiple URLs for <code>self</code>, but it should specify exactly one. Remove the extra <code>self</code> and try again.");
+        $("#step-hub-error .discovery").addClass("hidden");
+        $("#step-hub-error").removeClass("hidden");
+      } else if(data.hub.length == 1 && data.self.length == 1) {
+        // If exactly one hub was specified, subscribe immediately
+        $("#hub").text(data.hub);
+        $("#self").text(data.self);
+        $("#step-hub").removeClass("hidden");
+        $("#step-hub-error").addClass("hidden");
+        $("#step-subscribe").removeClass("hidden");
+        jwt = data.jwt;
+        hub = data.hub[0];
+        topic = data.self[0];
+        start_subscribe_step();
+      } else if(data.hub.length > 1 && data.self.length == 1) {
+        // If they specified multiple hubs, provide an option to choose which one to use
+        jwt = data.jwt;
+        topic = data.self[0];
+        $("#step-choose-hub ul").html('');
+        for(var i in data.hub) {
+          $("#step-choose-hub ul").append('<li><a href="javascript:set_hub(\''+data.hub[i]+'\')">'+data.hub[i]+'</a></li>');
+        }
+        $("#step-choose-hub").removeClass("hidden");
       }
     });
   }
 }
 
+function set_hub(which_hub) {
+  hub = which_hub;
+  $("#hub").text(hub);
+  $("#self").text(topic);
+  $("#step-hub .success h3").remove();
+  $("#step-hub").removeClass("hidden");
+  $("#step-hub-error").addClass("hidden");
+  $("#step-subscribe").removeClass("hidden");
+  start_subscribe_step();
+}
+
 function start_subscribe_step() {
+  $("#step-choose-hub").addClass("hidden");
+
   $("#step-subscribe-loading").removeClass("hidden");
   $("#step-subscribe-error").addClass("hidden");
 
   $.post("/publisher/subscribe", {
-    jwt: jwt
+    jwt: jwt,
+    hub: hub
   }, function(data){
     if(data.debug) {
       $("#hub-response-details").removeClass("hidden");
@@ -160,8 +207,12 @@ function start_subscribe_step() {
 
       verification_timer = setTimeout(check_if_subscription_is_active, 500);
     } else {
+      console.log(data);
       $("#step-subscribe-verify-waiting").addClass("hidden");
       $("#step-subscribe-error code").text(data.code);
+      if(data.error_description) {
+        $("#step-subscribe-error .message").append('<p>'+data.error_description+'</p>');
+      }
       $("#step-subscribe-error").removeClass("hidden");
     }
   });
