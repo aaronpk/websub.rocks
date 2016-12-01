@@ -207,7 +207,6 @@ function start_subscribe_step() {
 
       verification_timer = setTimeout(check_if_subscription_is_active, 500);
     } else {
-      console.log(data);
       $("#step-subscribe-verify-waiting").addClass("hidden");
       $("#step-subscribe-error code").text(data.code);
       if(data.error_description) {

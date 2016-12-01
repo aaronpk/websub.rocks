@@ -75,7 +75,7 @@ class Publisher {
         foreach($xpath->query('/atom:feed/atom:link[@href]') as $href) {
           $rel = $href->getAttribute('rel');
           $url = $href->getAttribute('href');
-          if($rel == 'hub' && !$doc['hub']) {
+          if($rel == 'hub') {
             $doc['hub'][] = $url;
           } else if($rel == 'self') {
             $doc['self'][] = $url;
@@ -86,7 +86,7 @@ class Publisher {
         foreach($xpath->query('/rss/channel/atom:link[@href]') as $href) {
           $rel = $href->getAttribute('rel');
           $url = $href->getAttribute('href');
-          if($rel == 'hub' && !$doc['hub']) {
+          if($rel == 'hub') {
             $doc['hub'][] = $url;
           } else if($rel == 'self') {
             $doc['self'][] = $url;
