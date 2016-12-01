@@ -63,10 +63,10 @@ class Publisher {
 
         $dom = html_to_dom_document($topic['body']);
         $xpath = new DOMXPath($dom);
-        foreach($xpath->query('//link[@href]') as $href) {
+        foreach($xpath->query('//feed/link[@href]') as $href) {
           $rel = $href->getAttribute('rel');
           $url = $href->getAttribute('href');
-          if($rel == 'hub') {
+          if($rel == 'hub' && !$doc['hub']) {
             $doc['hub'] = $url;
           } else if($rel == 'self') {
             $doc['self'] = $url;
