@@ -103,6 +103,7 @@ function start_discover_step() {
 
 
     $("#subscribe").addClass("loading");
+    $("#step-hub-error").addClass("hidden");
     $("#step-hub").addClass("hidden");
     $("#step-hub-loading").removeClass("hidden");
 
