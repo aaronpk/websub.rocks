@@ -67,6 +67,9 @@ socket.onmessage = function(event) {
       $("#step-subscribe-success").removeClass("hidden");
       $("#loader").remove();
       $("#continue-to-feed-btn").attr("href", data.text.topic).removeClass("hidden");
+    } else if(data.text.type == 'discover') {
+      // Another discovery request was made while we were waiting for the confirmation.
+      // This is not necessarily an error.
     } else {
       $("#step-subscribe-error code").text("unknown error");
       $("#step-subscribe-error .description").text("Something went wrong with the test.");
