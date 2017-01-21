@@ -7,6 +7,8 @@
   <section class="content">
     <h2>100: HTTP Header Discovery</h2>
 
+    <p>This test provides a sample blog that you can subscribe to. You'll be able to have this site generate new posts in the blog once you are subscribed.</p>
+
     <p>This test advertises the hub and self URLs only in the HTTP headers, not in the HTML contents. This verifies that your subscriber checks the HTTP headers to find the necessary URLs.</p>
 
     <h3>Discovery</h3>

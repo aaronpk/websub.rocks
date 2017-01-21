@@ -56,7 +56,7 @@ class Hub {
   public static function verify($num, $token, $mode, $callback, $challenge) {
     $client = new HTTP();
     // build new callback URL with additional query params
-    $topic = Config::$base . 'subscriber/' . $num . '/' . $token;
+    $topic = Config::$base . 'blog/' . $num . '/' . $token;
     $params = [
       'hub.mode' => $mode,
       'hub.topic' => $topic,
@@ -70,8 +70,8 @@ class Hub {
   }
 
   private static function deliver($num, $token, $callback, $content, $sig) {
-    $self = Config::$base . 'subscriber/' . $num . '/' . $token;
-    $hub = Config::$base . 'subscriber/' . $num . '/' . $token . '/hub';
+    $self = Config::$base . 'blog/' . $num . '/' . $token;
+    $hub = Config::$base . 'blog/' . $num . '/' . $token . '/hub';
 
     $headers = [
       'Content-Type: text/html',
