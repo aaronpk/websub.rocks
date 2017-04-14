@@ -110,7 +110,6 @@ function start_discover_step() {
     $.post("/publisher/discover", {
       topic: $("#topic_input").val()
     }, function(data){ 
-      console.log(data);
 
       $("#subscribe").removeClass("loading");
       $("#step-hub-loading").addClass("hidden");
@@ -205,10 +204,16 @@ function start_subscribe_step() {
           $("#notification-list").prepend($('<pre>').addClass('debug').text(body));
         }
       }
+      socket.onerror = function(event) {
+        console.log("Error subscribing to the EventSource stream");
+        $("#notifications .loader").addClass("hidden");
+        $("#notification-list").html('There was an error with websub.rocks. We are unable to deliver realtime notifications of WebSub pings. Check that it has been configured correctly.');
+      }
 
       verification_timer = setTimeout(check_if_subscription_is_active, 500);
     } else {
       $("#step-subscribe-verify-waiting").addClass("hidden");
+      console.log(data);
       $("#step-subscribe-error code").text(data.code);
       if(data.error_description) {
         $("#step-subscribe-error .message").append('<p>'+data.error_description+'</p>');
