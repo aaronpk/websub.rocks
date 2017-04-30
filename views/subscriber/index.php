@@ -9,10 +9,11 @@
 
     <ul>
       <li><a href="/subscriber/100">100</a> - HTTP header discovery</li>
+      <li><a href="/subscriber/101">101</a> - HTML tag discovery</li>
+      <li><a href="/subscriber/102">102</a> - Atom feed discovery</li>
+      <li><a href="/subscriber/103">103</a> - RSS feed discovery</li>
       <li>more soon...</li>
       <!-- 
-      <li><a href="/subscriber/101">101</a> - XML tag discovery</li>
-      <li><a href="/subscriber/102">102</a> - HTML tag discovery</li>
       <li><a href="/subscriber/103">103</a> - Test unsubscribing</li>
       -->
     </ul>

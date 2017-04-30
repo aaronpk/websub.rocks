@@ -21,6 +21,19 @@ class Subscriber {
     return $response;
   }
 
+  public static function test_name($num) {
+    switch($num) {
+      case 100:
+        return 'HTTP Header Discovery';
+      case 101:
+        return 'HTML Tag Discovery';
+      case 102:
+        return 'Atom Feed Discovery';
+      case 103:
+        return 'RSS Feed Discovery';
+    }
+  }
+
   public function get_test(ServerRequestInterface $request, ResponseInterface $response, $args) {
     p3k\session_setup();
     $num = $args['num'];
@@ -29,13 +42,31 @@ class Subscriber {
 
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
 
-    // TODO: set a cookie linking this browser session to this token, in order to 
-    // be able to only show the "new post" button to this user
+    switch($num) {
+      case 100:
+        $description = '<p>This test provides a sample blog that you can subscribe to. You\'ll be able to have this site generate new posts in the blog once you are subscribed.</p>'
+          .'<p>This test advertises the hub and self URLs only in the HTTP headers, not in the HTML contents. This verifies that your subscriber checks the HTTP headers to find the necessary URLs.</p>';
+        break;
+      case 101:
+        $description = '<p>This test provides a sample HTML page with a few microblog posts that you can subscribe to. You\'ll be able to have this site generate new posts in the blog once you are subscribed.</p>'
+          .'<p>This test advertises the hub and self URLs only in HTML tags, not in HTTP headers. This verifies that your subscriber parses the HTML to find the hub and self.</p>';
+        break;
+      case 102:
+        break;
+      case 103:
+        $description = '';
+        break;
+      default:
+        throw new \Exception('This test is not configured');
+    }
 
-    $response->getBody()->write(view('subscriber/'.$num, [
+    $response->getBody()->write(view('subscriber/test', [
       'title' => 'WebSub Rocks!',
       'token' => $token,
       'topic' => $topic,
+      'num' => $num,
+      'name' => self::test_name($num),
+      'description' => $description
     ]));
     return $response;
   }
@@ -52,13 +83,23 @@ class Subscriber {
 
     self::set_up_posts_in_feed($token);
 
-    if($num == 100) {
-      return $response
-        ->withHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'>; rel="self"')
-        ->withAddedHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'/hub>; rel="hub"');
-    } else {
-      return $response;
+    $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
+    $self = Config::$base.'blog/'.$num.'/'.$token;
+
+    switch($num) {
+      case 100:
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        break;
+      case 101: 
+        break;
+      case 102:
+      case 103:
+        $response = $response->withHeader('Content-Type', 'text/xml');
+        break;
     }
+    return $response;
   }
 
   public function get_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
@@ -75,11 +116,37 @@ class Subscriber {
     
     $posts = self::get_posts_in_feed($token);
 
-    $response->getBody()->write(view('subscriber/feed', [
+    $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
+    $self = Config::$base.'blog/'.$num.'/'.$token;
+
+    $link_tag = '';
+    switch($num) {
+      case 100:
+        $view = 'subscriber/feed';
+        break;
+      case 101:
+        $view = 'subscriber/feed';
+        $link_tag = '<link rel="hub" href="'.$hub.'">'."\n".'<link rel="self" href="'.$self.'">';
+        break;
+      case 102:
+        $view = 'subscriber/feed-atom';
+        $response = $response->withHeader('Content-Type', 'text/xml');
+        break;
+      case 103:
+        $view = 'subscriber/feed-rss';
+        $response = $response->withHeader('Content-Type', 'text/xml');
+        break;
+    }
+
+    $response->getBody()->write(view($view, [
       'title' => 'WebSub Rocks!',
       'num' => $num,
+      'name' => self::test_name($num),
       'token' => $token,
       'posts' => $posts,
+      'link_tag' => $link_tag,
+      'hub' => $hub,
+      'self' => $self
     ]));
     if($num == 100) {
       return $response
@@ -175,7 +242,7 @@ class Subscriber {
           }
 
           // Generate a new challenge
-          $subscriber->challenge = random_string(20);
+          $subscriber->challenge = p3k\random_string(20);
           $subscriber->save();
         } else {
           if(!$subscriber) {
@@ -248,15 +315,19 @@ class Subscriber {
     
     $delivered = Hub::publish($num, $token);
 
-    $posts = self::get_posts_in_feed($token);
-    $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
-    $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
+    if($request->getMethod() == 'GET') {
+      return $response->withHeader('Location', '/blog/'.$num.'/'.$token)->withStatus(302);
+    } else {
+      $posts = self::get_posts_in_feed($token);
+      $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
+      $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
 
-    return new JsonResponse([
-      'post' => $data,
-      'delivered' => $delivered,
-      'html' => $html,
-    ]);
+      return new JsonResponse([
+        'post' => $data,
+        'delivered' => $delivered,
+        'html' => $html,
+      ]);
+    }
   }
 
   private static function hub_error($token, $params, $code=400) {

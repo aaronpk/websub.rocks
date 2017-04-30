@@ -33,6 +33,7 @@ $route->map('GET', '/publisher/callback', 'App\\Publisher::callback_verify');
 $route->map('POST', '/publisher/callback', 'App\\Publisher::callback_deliver');
 
 $route->map('GET', '/subscriber', 'App\\Subscriber::index');
+$route->map('GET', '/subscriber/{num}/{token}/publish', 'App\\Subscriber::publish');
 $route->map('POST', '/subscriber/{num}/{token}/publish', 'App\\Subscriber::publish');
 $route->map('POST', '/blog/{num}/{token}/hub', 'App\\Subscriber::hub');
 $route->map('HEAD', '/blog/{num}/{token}', 'App\\Subscriber::head_feed');

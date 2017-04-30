@@ -62,7 +62,7 @@ class Publisher {
 
       } else if(preg_match('|xml|', $topic['headers']['Content-Type'])) {
 
-        $dom = xml_to_dom_document($topic['body']);
+        $dom = p3k\xml_to_dom_document($topic['body']);
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('atom', 'http://www.w3.org/2005/Atom');
 

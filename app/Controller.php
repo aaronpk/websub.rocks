@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use ORM;
 use IndieAuth;
 use Config;
+use p3k;
 
 class Controller {
 
