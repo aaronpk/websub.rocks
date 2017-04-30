@@ -7,11 +7,13 @@ use Zend\Diactoros\Response\JsonResponse;
 use ORM;
 use Config;
 use Rocks\Hub;
+use p3k\HTTP;
+use p3k;
 
 class Subscriber {
 
   public function index(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
     
     $response->getBody()->write(view('subscriber/index', [
       'title' => 'WebSub Rocks!',
@@ -20,12 +22,15 @@ class Subscriber {
   }
 
   public function get_test(ServerRequestInterface $request, ResponseInterface $response, $args) {
-    session_setup();
+    p3k\session_setup();
     $num = $args['num'];
 
-    $token = random_string(20);
+    $token = p3k\random_string(20);
 
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
+
+    // TODO: set a cookie linking this browser session to this token, in order to 
+    // be able to only show the "new post" button to this user
 
     $response->getBody()->write(view('subscriber/'.$num, [
       'title' => 'WebSub Rocks!',
@@ -36,7 +41,7 @@ class Subscriber {
   }
 
   public function head_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
-    session_setup();
+    p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -57,7 +62,7 @@ class Subscriber {
   }
 
   public function get_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
-    session_setup();
+    p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -86,7 +91,7 @@ class Subscriber {
   }
 
   public function hub(ServerRequestInterface $request, ResponseInterface $response, $args) {
-    session_setup();
+    p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -222,7 +227,7 @@ class Subscriber {
   }
 
   public function publish(ServerRequestInterface $request, ResponseInterface $response, $args) {
-    session_setup();
+    p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -262,7 +267,7 @@ class Subscriber {
 
   private static function set_up_posts_in_feed($token) {
     $key = 'websub.rocks::feed::'.$token;
-    if(redis()->llen($key) == 0) {
+    if(p3k\redis()->llen($key) == 0) {
       $quotes = ORM::for_table('quotes')->order_by_expr('RAND()')->limit(3)->find_many();
       foreach($quotes as $quote) {
         self::add_post_to_feed($token, $quote);
@@ -273,7 +278,7 @@ class Subscriber {
 
   private static function touch_feed($token) {
     $key = 'websub.rocks::feed::'.$token;
-    redis()->expire($key, 86400);
+    p3k\redis()->expire($key, 86400);
   }
 
   private static function add_post_to_feed($token, $post) {
@@ -284,16 +289,16 @@ class Subscriber {
       'content' => $post->content,
       'published' => date('Y-m-d H:i:s'),
     ];
-    redis()->lpush($key, json_encode($data));
+    p3k\redis()->lpush($key, json_encode($data));
     // Trim the list to show the last N posts
-    redis()->ltrim($key, 0, 9);
+    p3k\redis()->ltrim($key, 0, 9);
     return $data;
   }
 
   private static function get_posts_in_feed($token) {
     $key = 'websub.rocks::feed::'.$token;
-    $len = redis()->llen($key);
-    $items = redis()->lrange($key, 0, $len-1);
+    $len = p3k\redis()->llen($key);
+    $items = p3k\redis()->lrange($key, 0, $len-1);
     return array_map(function($i){ return json_decode($i, true); }, $items);
   }
 

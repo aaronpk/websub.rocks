@@ -3,6 +3,8 @@ namespace Rocks;
 
 use ORM;
 use Config;
+use p3k\HTTP;
+use p3k;
 
 class Hub {
 
@@ -64,7 +66,7 @@ class Hub {
       'hub.lease_seconds' => self::$LEASE_SECONDS
     ];
     // Parse the URL
-    $callback = add_query_params_to_url($callback, $params);
+    $callback = p3k\url\add_query_params_to_url($callback, $params);
 
     return $client->get($callback);
   }

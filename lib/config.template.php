@@ -4,10 +4,12 @@ class Config {
 
   public static $redis = 'tcp://127.0.0.1:6379';
 
-  public static $dbhost = '127.0.0.1';
-  public static $dbname = 'websubrocks';
-  public static $dbuser = 'websubrocks';
-  public static $dbpass = 'websubrocks';
+  public static $db = [
+    'host' => '127.0.0.1',
+    'database' => 'websubrocks',
+    'username' => 'websubrocks',
+    'password' => 'websubrocks',
+  ];
 
   // When set to true, authentication is bypassed, and you can log in by 
   // entering any email you want in the login form. This is useful when developing

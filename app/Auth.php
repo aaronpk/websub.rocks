@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use ORM;
 use Config;
 use Mailgun\Mailgun;
+use p3k;
 
 class Auth {
 
@@ -19,7 +20,7 @@ class Auth {
       $user->email = $params['email'];
     }
 
-    $user->auth_code = $code = random_string(64);
+    $user->auth_code = $code = p3k\random_string(64);
     $user->auth_code_exp = date('Y-m-d H:i:s', time()+60*30);
     $user->save();
 
@@ -70,7 +71,7 @@ class Auth {
     $user->last_login = date('Y-m-d H:i:s');
     $user->save();
 
-    session_setup(true);
+    p3k\session_setup(true);
     $_SESSION['user_id'] = $user->id;
     $_SESSION['email'] = $user->email;
     $_SESSION['login'] = 'success';
@@ -78,7 +79,7 @@ class Auth {
   }
 
   public function signout(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup(true);
+    p3k\session_setup(true);
     unset($_SESSION['user_id']);
     unset($_SESSION['email']);
     $_SESSION = [];

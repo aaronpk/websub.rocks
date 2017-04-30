@@ -12,7 +12,9 @@
     "mailgun/mailgun-php": "^2.1",
     "php-http/guzzle6-adapter": "^1.1",
     "indieweb/link-rel-parser": "0.1.*",
-    "firebase/php-jwt": "^4.0"
+    "firebase/php-jwt": "^4.0",
+    "p3k/http": "0.1.*",
+    "p3k/utils": "1.*"
   },
   "autoload": {
     "psr-4": {

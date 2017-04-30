@@ -6,15 +6,16 @@ use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\JsonResponse;
 use ORM, Config;
 use DOMXPath;
-use Rocks\HTTP;
 use Firebase\JWT\JWT;
+use p3k\HTTP;
+use p3k;
 
 class Publisher {
 
   public $client;
 
   public function index(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
     
     $response->getBody()->write(view('publisher/index', [
       'title' => 'WebSub Rocks!',
@@ -23,7 +24,7 @@ class Publisher {
   }
 
   public function discover(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
 
     $this->client = new HTTP();
     $params = $request->getParsedBody();
@@ -131,7 +132,7 @@ class Publisher {
   }
 
   public function subscribe(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
 
     $this->client = new HTTP();
     $params = $request->getParsedBody();
@@ -162,7 +163,7 @@ class Publisher {
       ->find_one();
     if(!$subscription) {
       $subscription = ORM::for_table('subscriptions')->create();
-      $subscription->token = random_string(20);
+      $subscription->token = p3k\random_string(20);
       $subscription->hub = $hub;
       $subscription->topic = $topic;
       $subscription->date_created = date('Y-m-d H:i:s');

@@ -14,7 +14,7 @@ class Controller {
   }
 
   public function index(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
     
     $response->getBody()->write(view('index', [
       'title' => 'WebSub Rocks!',
@@ -23,7 +23,7 @@ class Controller {
   }
 
   public function dashboard(ServerRequestInterface $request, ResponseInterface $response) {
-    session_setup();
+    p3k\session_setup();
 
     if(!is_logged_in()) {
       return login_required($response);

@@ -26,7 +26,7 @@
   <?php if(is_logged_in()): ?>
     <a class="item" href="/dashboard">Dashboard</a>
     <div class="right menu">
-      <span class="item"><?= display_url($_SESSION['email']) ?></span>
+      <span class="item"><?= p3k\url\display_url($_SESSION['email']) ?></span>
       <a class="item" href="/auth/signout">Sign Out</a>
     </div>
   <?php endif; ?>
