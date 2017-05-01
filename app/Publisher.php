@@ -26,8 +26,11 @@ class Publisher {
   public function discover(ServerRequestInterface $request, ResponseInterface $response) {
     p3k\session_setup();
 
-    $this->client = new HTTP();
+    $this->client = new HTTP(Config::$useragent);
     $params = $request->getParsedBody();
+    if(!$params) {
+      $params = $request->getQueryParams();
+    }
 
     $topic_url = $params['topic'];
     $topic = $this->client->get($params['topic']);
@@ -41,6 +44,11 @@ class Publisher {
       'self' => [],
       'type' => false,
     ];
+    $hostmeta = [
+      'hub' => [],
+    ];
+
+    // Get the values from the Link headers
     if(array_key_exists('hub', $topic['rels'])) {
       $http['hub'] = $topic['rels']['hub'];
     }
@@ -48,8 +56,13 @@ class Publisher {
       $http['self'] = $topic['rels']['self'];
     }
 
+    $content_type = '';
     if(array_key_exists('Content-Type', $topic['headers'])) {
-      if(preg_match('|text/html|', $topic['headers']['Content-Type'])) {
+      $content_type = $topic['headers']['Content-Type'];
+      if(is_array($content_type))
+        $content_type = $content_type[0];
+
+      if(preg_match('|text/html|', $content_type)) {
 
         $mf2 = \Mf2\parse($topic['body'], $topic_url);
         if(array_key_exists('hub', $mf2['rels'])) {
@@ -60,7 +73,7 @@ class Publisher {
         }
         $doc['type'] = 'html';
 
-      } else if(preg_match('|xml|', $topic['headers']['Content-Type'])) {
+      } else if(preg_match('|xml|', $content_type)) {
 
         $dom = p3k\xml_to_dom_document($topic['body']);
         $xpath = new DOMXPath($dom);
@@ -97,29 +110,83 @@ class Publisher {
       }
     }
 
+    // Check for a .well-known file
+    $topic_base = parse_url($params['topic'], PHP_URL_SCHEME).'://'.parse_url($params['topic'], PHP_URL_HOST);
+    $hostmeta_response = $this->client->get($topic_base.'/.well-known/host-meta');
+    if($hostmeta_response['code'] == 200) {
+      if(isset($hostmeta_response['headers']['Content-Type']) && is_string($hostmeta_response['headers']['Content-Type'])) {
+        if(strpos($hostmeta_response['headers']['Content-Type'], 'xml') !== false) {
+          $dom = p3k\xml_to_dom_document($hostmeta_response['body']);
+          foreach($dom->getElementsByTagName('Link') as $link) {
+            if($link->getAttribute('rel') == 'hub') {
+              $hostmeta['hub'][] = $link->getAttribute('href');
+            }
+          }
+        }
+      }
+    }
+
     $data = [
       'http' => $http,
       'doc' => $doc,
+      'hostmeta' => $hostmeta
     ];
 
     $hub = false;
+    $hub_source = false;
     $self = false;
+    $self_source = false;
 
     // Prioritize the HTTP headers
-    if($http['hub'])
+    if($http['hub']) {
       $hub = $http['hub'];
-    elseif($doc['hub'])
+      $hub_source = 'http';
+    }
+    elseif($doc['hub']) {
       $hub = $doc['hub'];
+      $hub_source = 'body';
+    }
+    elseif($hostmeta['hub']) {
+      $hub = $hostmeta['hub'];
+      $hub_source = 'hostmeta';
+    }
 
-    if($http['self'])
+    if($http['self']) {
       $self = $http['self'];
-    elseif($doc['self'])
+      $self_source = 'http';
+    }
+    elseif($doc['self']) {
       $self = $doc['self'];
+      $self_source = 'body';
+    }
 
     $jwt = JWT::encode([
       'hub' => $hub,
       'topic' => $self,
     ], Config::$secret);
+
+    // Log this in the database if there is a hub and self
+    if($hub && $self) {
+      $publisher = ORM::for_table('publishers')
+        ->where('user_id', is_logged_in() ? $_SESSION['user_id'] : 0)
+        ->where('input_url', $topic_url)
+        ->find_one();
+      if(!$publisher) {
+        $publisher = ORM::for_table('publishers')->create();
+        $publisher->user_id = is_logged_in() ? $_SESSION['user_id'] : 0;
+        $publisher->input_url = $topic_url;
+      }
+      $publisher->date_created = date('Y-m-d H:i:s');
+      $publisher->hub_url = $hub[0];
+      $publisher->hub_source = $hub_source;
+      $publisher->self_url = $self[0];
+      $publisher->self_source = $self_source;
+      $publisher->content_type = $content_type;
+      $publisher->http_links = json_encode($http,JSON_UNESCAPED_SLASHES);
+      $publisher->body_links = json_encode($doc,JSON_UNESCAPED_SLASHES);
+      $publisher->hostmeta_links = json_encode($hostmeta,JSON_UNESCAPED_SLASHES);
+      $publisher->save();
+    }
 
     $debug = json_encode($data, JSON_PRETTY_PRINT);
 
@@ -134,7 +201,7 @@ class Publisher {
   public function subscribe(ServerRequestInterface $request, ResponseInterface $response) {
     p3k\session_setup();
 
-    $this->client = new HTTP();
+    $this->client = new HTTP(Config::$useragent);
     $params = $request->getParsedBody();
 
     $data = (array)JWT::decode($params['jwt'], Config::$secret, ['HS256']);

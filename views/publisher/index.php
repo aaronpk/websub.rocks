@@ -182,6 +182,8 @@ function start_subscribe_step() {
     if(data.debug) {
       $("#hub-response-details").removeClass("hidden");
       $("#subscribe-debug").text(data.debug);
+    } else {
+      $("#subscribe-debug").text("");
     }
     $("#step-subscribe-loading").addClass("hidden");
     $("#step-subscribe-verify-waiting").removeClass("hidden");

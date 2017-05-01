@@ -56,7 +56,7 @@ class Hub {
   }
 
   public static function verify($num, $token, $mode, $callback, $challenge) {
-    $client = new HTTP();
+    $client = new HTTP(Config::$useragent);
     // build new callback URL with additional query params
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
     $params = [
@@ -84,7 +84,7 @@ class Hub {
       $headers[] = 'X-Hub-Signature: sha256='.$sig;
     }
 
-    $client = new HTTP();
+    $client = new HTTP(Config::$useragent);
     return $client->post($callback, $content, $headers);
   }
 

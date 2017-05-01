@@ -1,6 +1,7 @@
 <?php
 class Config {
   public static $base = 'http://websubrocks.dev/';
+  public static $useragent = '';
 
   public static $redis = 'tcp://127.0.0.1:6379';
 
