@@ -52,6 +52,7 @@ class Subscriber {
           .'<p>This test advertises the hub and self URLs only in HTML tags, not in HTTP headers. This verifies that your subscriber parses the HTML to find the hub and self.</p>';
         break;
       case 102:
+        $description = '';
         break;
       case 103:
         $description = '';

@@ -24,6 +24,7 @@
       <guid isPermaLink="true"><?= $self ?>#quote-<?= $i ?></guid>
       <description><![CDATA[<?= $post['content'] ?>]]></description>
       <link><?= $self ?>#quote-<?= $i ?></link>
+      <author><?= $post['author'] ?></author>
     </item>
     
   <? endforeach ?>
