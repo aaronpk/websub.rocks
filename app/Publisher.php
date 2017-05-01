@@ -60,17 +60,23 @@ class Publisher {
     if(array_key_exists('Content-Type', $topic['headers'])) {
       $content_type = $topic['headers']['Content-Type'];
       if(is_array($content_type))
-        $content_type = $content_type[0];
+        $content_type = $content_type[count($content_type)-1];
 
       if(preg_match('|text/html|', $content_type)) {
 
-        $mf2 = \Mf2\parse($topic['body'], $topic_url);
-        if(array_key_exists('hub', $mf2['rels'])) {
-          $doc['hub'] = $mf2['rels']['hub'];
+        $dom = p3k\html_to_dom_document($topic['body']);
+        $xpath = new DOMXPath($dom);
+
+        foreach($xpath->query('*/link[@href]') as $link) {
+          $rel = $link->getAttribute('rel');
+          $url = $link->getAttribute('href');
+          if($rel == 'hub') {
+            $doc['hub'][] = $url;
+          } else if($rel == 'self') {
+            $doc['self'][] = $url;
+          }
         }
-        if(array_key_exists('self', $mf2['rels'])) {
-          $doc['self'] = $mf2['rels']['self'];
-        }
+
         $doc['type'] = 'html';
 
       } else if(preg_match('|xml|', $content_type)) {
@@ -81,7 +87,7 @@ class Publisher {
 
         if($xpath->query('/rss')->length) {
           $doc['type'] = 'rss';
-        } elseif($xpath->query('/feed')->length) {
+        } elseif($xpath->query('/atom:feed')->length) {
           $doc['type'] = 'atom';
         }
 

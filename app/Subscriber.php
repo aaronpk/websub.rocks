@@ -52,10 +52,10 @@ class Subscriber {
           .'<p>This test advertises the hub and self URLs only in HTML tags, not in HTTP headers. This verifies that your subscriber parses the HTML to find the hub and self.</p>';
         break;
       case 102:
-        $description = '';
+        $description = '<p>This test provides a sample Atom feed that advertises the hub and self URLs as &lt;link&gt; elements within the feed. You\'ll be able to generate new posts in this feed once you are subscribed.</p>';
         break;
       case 103:
-        $description = '';
+        $description = '<p>This test provides a sample RSS feed that advertises the hub and self URLs as &lt;atom:link&gt; elements within the feed. You\'ll be able to generate new posts in this feed once you are subscribed.</p>';
         break;
       default:
         throw new \Exception('This test is not configured');
@@ -131,11 +131,11 @@ class Subscriber {
         break;
       case 102:
         $view = 'subscriber/feed-atom';
-        $response = $response->withHeader('Content-Type', 'text/xml');
+        $response = $response->withHeader('Content-Type', 'application/atom+xml');
         break;
       case 103:
         $view = 'subscriber/feed-rss';
-        $response = $response->withHeader('Content-Type', 'text/xml');
+        $response = $response->withHeader('Content-Type', 'application/rss+xml');
         break;
     }
 
