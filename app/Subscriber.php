@@ -31,6 +31,8 @@ class Subscriber {
         return 'Atom Feed Discovery';
       case 103:
         return 'RSS Feed Discovery';
+      case 104:
+        return 'Discovery Priority';
     }
   }
 
@@ -56,6 +58,9 @@ class Subscriber {
         break;
       case 103:
         $description = '<p>This test provides a sample RSS feed that advertises the hub and self URLs as &lt;atom:link&gt; elements within the feed. You\'ll be able to generate new posts in this feed once you are subscribed.</p>';
+        break;
+      case 104:
+        $description = '<p>This test checks that you are prioritizing HTTP Link headers over document link tags. If you can successfully subcribe to this feed you have passed the test. You will fail the test if you attempt to subscribe to the wrong feed.</p>';
         break;
       default:
         throw new \Exception('This test is not configured');
@@ -96,8 +101,16 @@ class Subscriber {
       case 101: 
         break;
       case 102:
+        $response = $response->withHeader('Content-Type', 'application/atom+xml');
+        break;
       case 103:
-        $response = $response->withHeader('Content-Type', 'text/xml');
+        $response = $response->withHeader('Content-Type', 'application/rss+xml');
+        break;
+      case 104:
+        $response = $response
+          ->withHeader('Content-Type', 'application/atom+xml')
+          ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
     }
     return $response;
@@ -137,6 +150,15 @@ class Subscriber {
         $view = 'subscriber/feed-rss';
         $response = $response->withHeader('Content-Type', 'application/rss+xml');
         break;
+      case 104:
+        $response = $response
+          ->withHeader('Content-Type', 'application/atom+xml')
+          ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        // Overwrite the $hub variables to set different values for the XML feed
+        $hub = p3k\url\add_query_params_to_url($hub, ['error'=>'wrongtag']);
+        $view = 'subscriber/feed-atom';
+        break;
     }
 
     $response->getBody()->write(view($view, [
@@ -170,6 +192,7 @@ class Subscriber {
       return self::hub_error($token, ['error' => 'not_found'], 404);
     }
 
+    $query = $request->getQueryParams();
     $params = $request->getParsedBody();
 
     $mode = array_key_exists('hub_mode', $params) ? $params['hub_mode'] : false;
@@ -182,7 +205,6 @@ class Subscriber {
         if(!array_key_exists('hub_callback', $params)
            || !array_key_exists('hub_topic', $params)) {
 
-          // TODO: publish this to the UI
           if(!array_key_exists('hub_callback', $params) && array_key_exists('hub_topic', $params))
             $description = 'The request is missing the callback parameter';
           elseif(array_key_exists('hub_callback', $params) && !array_key_exists('hub_topic', $params))
@@ -204,7 +226,7 @@ class Subscriber {
           ], 400);
         }
 
-        // Check that the hub and topic match
+        // Check that the topic matches
         if($params['hub_topic'] != Config::$base . 'blog/' . $num . '/' . $token) {
           return self::hub_error($token, [
             'error' => 'invalid_topic',
@@ -221,6 +243,19 @@ class Subscriber {
             ], 400);
           }
         }
+
+        // Check for test-specific errors
+        switch($num) {
+          case 104:
+            if(isset($query['error']) && $query['error'] == 'wrongtag') {
+              return self::hub_error($token, [
+                'error' => 'wrong_discovery_priority',
+                'error_description' => 'The subscriber used the tags found in the document body rather than in the HTTP Link headers.'
+              ], 400);
+            }
+            break;
+        }
+
 
         // TODO: lease_seconds
 

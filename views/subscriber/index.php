@@ -12,6 +12,7 @@
       <li><a href="/subscriber/101">101</a> - HTML tag discovery</li>
       <li><a href="/subscriber/102">102</a> - Atom feed discovery</li>
       <li><a href="/subscriber/103">103</a> - RSS feed discovery</li>
+      <li><a href="/subscriber/104">104</a> - Discovery priority</li>
       <li>more soon...</li>
       <!-- 
       <li><a href="/subscriber/103">103</a> - Test unsubscribing</li>
