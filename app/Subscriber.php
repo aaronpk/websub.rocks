@@ -33,6 +33,10 @@ class Subscriber {
         return 'RSS Feed Discovery';
       case 104:
         return 'Discovery Priority';
+      case 105:
+        return 'Subscribing to a Temporarily Redirected Hub';
+      case 106:
+        return 'Subscribing to a Permanently Redirected Hub';
     }
   }
 
@@ -61,6 +65,12 @@ class Subscriber {
         break;
       case 104:
         $description = '<p>This test checks that you are prioritizing HTTP Link headers over document link tags. If you can successfully subcribe to this feed you have passed the test. You will fail the test if you attempt to subscribe to the wrong feed.</p>';
+        break;
+      case 105:
+        $description = '<p>This test checks that you can subscribe to a hub that sends a 307 temporary redirect to a new hub. This is used when the hub changes its own URL.</p>';
+        break;
+      case 106:
+        $description = '<p>This test checks that you can subscribe to a hub that sends a 308 permanent redirect to a new hub. This is used when the hub changes its own URL.</p>';
         break;
       default:
         throw new \Exception('This test is not configured');
@@ -112,6 +122,13 @@ class Subscriber {
           ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
+      case 105:
+      case 106:
+        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        break;
     }
     return $response;
   }
@@ -158,6 +175,14 @@ class Subscriber {
         // Overwrite the $hub variables to set different values for the XML feed
         $hub = p3k\url\add_query_params_to_url($hub, ['error'=>'wrongtag']);
         $view = 'subscriber/feed-atom';
+        break;
+      case 105:
+      case 106:
+        $view = 'subscriber/feed';
+        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
     }
 
@@ -252,6 +277,15 @@ class Subscriber {
                 'error' => 'wrong_discovery_priority',
                 'error_description' => 'The subscriber used the tags found in the document body rather than in the HTTP Link headers.'
               ], 400);
+            }
+            break;
+          case 105:
+          case 106:
+            if(isset($query['redirect']) && $query['redirect'] == 'true') {
+              // Send a redirect
+              $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
+              return $response->withStatus(($num == 105 ? 307 : 308))
+                ->withHeader('Location', $hub);
             }
             break;
         }
