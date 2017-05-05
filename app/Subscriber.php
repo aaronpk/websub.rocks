@@ -144,15 +144,15 @@ class Subscriber {
         break;
       case 102:
         $view = 'subscriber/feed-atom';
-        $response = $response->withHeader('Content-Type', 'application/atom+xml');
+        $response = $response->withHeader('Content-Type', 'text/xml'); // text/xml for XSLT
         break;
       case 103:
         $view = 'subscriber/feed-rss';
-        $response = $response->withHeader('Content-Type', 'application/rss+xml');
+        $response = $response->withHeader('Content-Type', 'text/xml'); // text/xml for XSLT
         break;
       case 104:
         $response = $response
-          ->withHeader('Content-Type', 'application/atom+xml')
+          ->withHeader('Content-Type', 'text/xml') // text/xml for XSLT
           ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         // Overwrite the $hub variables to set different values for the XML feed
@@ -304,11 +304,19 @@ class Subscriber {
           $subscriber->challenge_response_code = $result['code'];
           $subscriber->challenge_response = $result['debug'];
           $subscriber->save();
+
+          $success_message = false;
+          if($num == 104) {
+            $success_message = 'Great! You discovered the correct URL to subscribe to, prioritizing the HTTP Link headers.';
+          }
+
           streaming_publish($token, [
             'type' => 'success',
             'mode' => $mode,
             'callback_response' => $result['debug'],
             'topic' => $params['hub_topic'],
+            'skip_continue' => ($num == 104),
+            'success_message' => $success_message
           ]);
           return $response->withStatus(202);
         } else {
