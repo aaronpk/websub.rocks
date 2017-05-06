@@ -78,10 +78,10 @@ class Subscriber {
         $description = '<p>This test reports a different rel=self URL from the URL used to retrieve it.</p>';
         break;
       case 201:
-        $description = '<p>This test checks that you can subscribe to a topic that sends a 301 permanent redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
+        $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
         break;
       case 202:
-        $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
+        $description = '<p>This test checks that you can subscribe to a topic that sends a 301 permanent redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
         break;
       case 203:
         $description = '<p>This test checks that you can subscribe to a hub that sends a 307 temporary redirect to a new hub. This is used when the hub changes its own URL.</p>';
@@ -156,7 +156,7 @@ class Subscriber {
         $self = p3k\url\add_query_params_to_url($self, ['redirect'=>'complete']);
         if(!isset($query['redirect'])) {
           return $response
-            ->withStatus(301)
+            ->withStatus($num == 201 ? 302 : 301)
             ->withHeader('Location', $self);
         } else {
           $response = $response
