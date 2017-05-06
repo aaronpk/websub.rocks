@@ -45,6 +45,12 @@ class Subscriber {
         return 'Subscribing to a Permanently Redirected Hub';
       case 205:
         return 'Rejects a Verification Request for an Invalid Topic';
+      case 300:
+        return 'Returns 2xx for Successful Delivery';
+      case 301:
+        return 'Rejects Invalid Signatures';
+      case 302: 
+        return 'Rejects Distribution with No Signature';
     }
   }
 
@@ -92,6 +98,15 @@ class Subscriber {
       case 205:
         $description = '<p>This test checks that the subscriber properly rejects a verification request for an invalid topic URL. To start this test, attempt to subscribe to the URL below. The hub will send a subscription verification request with a different topic URL, and your subscriber should reject the request.</p>';
         break;
+      case 300:
+        $description = '<p>This test confirms that your subscriber returns HTTP 2xx when the notification payload is delivered. If your subscription request includes a secret, a valid signature will be sent in the notification distribution.</p>';
+        break;
+      case 301:
+        $description = '<p>This test confirms that your subscriber rejects a distribution request that contains an invalid signature. You will need to include a secret when you subscribe to this URL. If your subscriber doesn\'t support authenticated distributions, you can ignore this test.</p>';
+        break;
+      case 302:
+        $description = '<p>This test confirms that your subscriber rejects a distribution request that does not contain a signature if the subscription was created with a secret. You will need to include a secret when you subscribe to this URL. If your subscriber doesn\'t support authenticated distributions, you can ignore this test.</p>';
+        break;
       default:
         throw new \Exception('This test is not configured');
     }
@@ -127,6 +142,9 @@ class Subscriber {
     switch($num) {
       case 100:
       case 205:
+      case 300:
+      case 301:
+      case 302:
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
@@ -199,6 +217,14 @@ class Subscriber {
       case 100:
       case 205:
         $view = 'subscriber/feed';
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        break;
+      case 300:
+      case 301:
+      case 302:
+        $view = 'subscriber/feed-3xx';
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
@@ -360,6 +386,16 @@ class Subscriber {
                 ->withHeader('Location', $hub);
             }
             break;
+          case 301:
+          case 302:
+            // These tests require the subscription is created with a secret
+            if(!isset($params['hub_secret'])) {
+              return self::hub_error($token, [
+                'error' => 'missing_secret',
+                'error_description' => 'This test requires that you create the subscription with a secret. If you do not want to support checking the signature of notification payloads you can skip this test.'
+              ]);
+            }
+            break;
         }
 
 
@@ -492,7 +528,16 @@ class Subscriber {
 
     $data = self::add_post_to_feed($token, $post);
     
-    $delivered = Hub::publish($num, $token);
+    switch($num) {
+      case 301:
+        $send_secret = 'invalid'; break;
+      case 302:
+        $send_secret = 'omit'; break;
+      default:
+        $send_secret = 'valid'; break;
+    }
+
+    $delivered = Hub::publish($num, $token, $send_secret);
 
     if($request->getMethod() == 'GET') {
       return $response->withHeader('Location', '/blog/'.$num.'/'.$token)->withStatus(302);
@@ -501,10 +546,57 @@ class Subscriber {
       $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
       $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
 
+      $result = null;
+      $message = null;
+      if(in_array($num, [300,301,302])) {
+        if(count($delivered) == 0) {
+          $result = 'fail';
+          $message = 'There are no active subscribers for this feed.';
+        } elseif(count($delivered) == 1) {
+          $d = $delivered[0];
+
+          switch($num) {
+            case 300:
+              if(floor($d['code']/100) == 2) {
+                $result = 'success';
+                $message = 'Great! Your subscriber returned '.$d['code'].' acknowledging the successful receipt of the delivery.';
+              } else {
+                $result = 'fail';
+                $message = 'Your subscriber failed to acknowledge the delivery successfully. You need to return HTTP 2xx to consider the delivery a success. Your subscriber returned '.$d['code'].'.';
+              }
+              break;
+            case 301:
+              if(floor($d['code']/100) == 2) {
+                $result = 'success';
+                $message = 'Great! Your subscriber returned '.$d['code'].'. The payload delivered contains an invalid signature, so you should ensure your subscriber does not process this notification.';
+              } else {
+                $result = 'fail';
+                $message = 'Your subscriber failed to acknowledge the delivery successfully. You need to return HTTP 2xx even if the signature doesn\'t match. Your subscriber returned '.$d['code'].'.';
+              }
+              break;
+            case 302:
+              if(floor($d['code']/100) == 2) {
+                $result = 'fail';
+                $message = 'Your subscriber failed to reject the delivery of this notification. This delivery did not include a signature, but your subscription was created with a secret. Your subscriber returned '.$d['code'].'.';
+              } else {
+                $result = 'success';
+                $message = 'Great! Your subscriber returned '.$d['code'].'. The payload delivered contains no signature, but your subscription was created with a secret.';
+              }
+              break;
+          }
+
+        } else {
+          $result = 'fail';
+          $message = 'Multiple subscriptions were created for this feed so we aren\'t sure which you are testing. Try again with a new feed and only create one subscription.';
+        }
+      }
+
       return new JsonResponse([
         'post' => $data,
         'delivered' => $delivered,
         'html' => $html,
+        'result' => $result,
+        'message' => $message,
       ]);
     }
   }

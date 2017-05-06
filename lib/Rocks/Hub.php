@@ -10,7 +10,7 @@ class Hub {
 
   public static $LEASE_SECONDS = 86400;
 
-  public static function publish($num, $token) {
+  public static function publish($num, $token, $send_secret='valid') {
 
     $subscriptions = ORM::for_table('subscriber_hub')
       ->where('test', $num)->where('token', $token)
@@ -25,10 +25,15 @@ class Hub {
 
       foreach($subscriptions as $sub) {
         if(strtotime($sub->date_expires) > time()) {
-          if($sub->secret)
+          if($sub->secret && $send_secret != 'omit') {
             $sig = hash_hmac('sha256', $html, $sub->secret);
-          else
+          } else {
             $sig = false;
+          }
+
+          if($send_secret == 'invalid') {
+            $sig .= rand(1000,9999);
+          }
 
           $sub->date_last_notified = date('Y-m-d H:i:s');
           $response = self::deliver($num, $token, $sub->callback, $html, $sig);
