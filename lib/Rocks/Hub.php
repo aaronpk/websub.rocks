@@ -59,12 +59,20 @@ class Hub {
     $client = new HTTP(Config::$useragent);
     // build new callback URL with additional query params
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
-    if($num == 201 || $num == 202) {
-      $topic .= '?redirect=complete';
+
+    switch($num) {
+      case 200:
+        $topic .= '?self=other';
+        break;
+      case 201:
+      case 202:
+        $topic .= '?redirect=complete';
+        break;
+      case 205:
+        $topic .= '?invalid';
+        break;
     }
-    if($num == 200) {
-      $topic .= '?self=other';
-    }
+
     $params = [
       'hub.mode' => $mode,
       'hub.topic' => $topic,
@@ -80,11 +88,14 @@ class Hub {
   private static function deliver($num, $token, $callback, $content, $sig) {
     $self = Config::$base . 'blog/' . $num . '/' . $token;
 
-    if($num == 201 || $num == 202) {
-      $self .= '?redirect=complete';
-    }
-    if($num == 200) {
-      $self .= '?self=other';
+    switch($num) {
+      case 200:
+        $self .= '?self=other';
+        break;
+      case 201:
+      case 202:
+        $self .= '?redirect=complete';
+        break;
     }
 
     $hub = Config::$base . 'blog/' . $num . '/' . $token . '/hub';
@@ -104,12 +115,17 @@ class Hub {
 
   private static function render_page($num, $token) {
     $response = new \Zend\Diactoros\Response();
-    if($num == 201 || $num == 202) {
-      $_GET['redirect'] = 'complete';
+
+    switch($num) {
+      case 200:
+        $_GET['self'] = 'other';
+        break;
+      case 201:
+      case 202:
+        $_GET['redirect'] = 'complete';
+        break;
     }
-    if($num == 200) {
-      $_GET['self'] = 'other';
-    }
+
     $request = \Zend\Diactoros\ServerRequestFactory::fromGlobals(
       $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES
     );

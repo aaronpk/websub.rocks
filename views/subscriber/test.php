@@ -32,7 +32,7 @@
       </div>
 
       <div id="subscription-callback-response" class="hidden">
-        <p>Below is the response your subscriber set to the verification request.</p>
+        <p>Below is the response your subscriber sent to the verification request.</p>
         <pre class="debug"></pre>
       </div>
 
@@ -65,10 +65,11 @@ socket.onmessage = function(event) {
       $("#step-subscribe-error").addClass("hidden");
       $("#step-subscribe-success").removeClass("hidden");
       $("#loader").remove();
-      if(data.text.skip_continue) {
-        $("#step-subscribe-success").text(data.text.success_message);
-      } else{
+      if(!data.text.skip_continue) {
         $("#continue-to-feed-btn").attr("href", data.text.topic).removeClass("hidden");
+      }
+      if(data.text.success_message) {
+        $("#step-subscribe-success").text(data.text.success_message);
       }
       $("#step-discover-success").addClass("hidden");
     } else if(data.text.type == 'discover') {

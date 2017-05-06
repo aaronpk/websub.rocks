@@ -33,16 +33,18 @@ class Subscriber {
         return 'RSS Feed Discovery';
       case 104:
         return 'Discovery Priority';
-      case 203:
-        return 'Subscribing to a Temporarily Redirected Hub';
-      case 204:
-        return 'Subscribing to a Permanently Redirected Hub';
+      case 200:
+        return 'Subscribing to a URL with a Different rel=self';
       case 201:
         return 'Subscribing to a Temporarily Redirected Topic';
       case 202:
         return 'Subscribing to a Permanently Redirected Topic';
-      case 200:
-        return 'Subscribing to a URL with a Different rel=self';
+      case 203:
+        return 'Subscribing to a Temporarily Redirected Hub';
+      case 204:
+        return 'Subscribing to a Permanently Redirected Hub';
+      case 205:
+        return 'Rejects a Verification Request for an Invalid Topic';
     }
   }
 
@@ -72,11 +74,8 @@ class Subscriber {
       case 104:
         $description = '<p>This test checks that you are prioritizing HTTP Link headers over document link tags. If you can successfully subcribe to this feed you have passed the test. You will fail the test if you attempt to subscribe to the wrong feed.</p>';
         break;
-      case 203:
-        $description = '<p>This test checks that you can subscribe to a hub that sends a 307 temporary redirect to a new hub. This is used when the hub changes its own URL.</p>';
-        break;
-      case 204:
-        $description = '<p>This test checks that you can subscribe to a hub that sends a 308 permanent redirect to a new hub. This is used when the hub changes its own URL.</p>';
+      case 200:
+        $description = '<p>This test reports a different rel=self URL from the URL used to retrieve it.</p>';
         break;
       case 201:
         $description = '<p>This test checks that you can subscribe to a topic that sends a 301 permanent redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
@@ -84,8 +83,14 @@ class Subscriber {
       case 202:
         $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
         break;
-      case 200:
-        $description = '<p>This test reports a different rel=self URL from the URL used to retrieve it.</p>';
+      case 203:
+        $description = '<p>This test checks that you can subscribe to a hub that sends a 307 temporary redirect to a new hub. This is used when the hub changes its own URL.</p>';
+        break;
+      case 204:
+        $description = '<p>This test checks that you can subscribe to a hub that sends a 308 permanent redirect to a new hub. This is used when the hub changes its own URL.</p>';
+        break;
+      case 205:
+        $description = '<p>This test checks that the subscriber properly rejects a verification request for an invalid topic URL. To start this test, attempt to subscribe to the URL below. The hub will send a subscription verification request with a different topic URL, and your subscriber should reject the request.</p>';
         break;
       default:
         throw new \Exception('This test is not configured');
@@ -121,6 +126,7 @@ class Subscriber {
 
     switch($num) {
       case 100:
+      case 205:
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
@@ -139,9 +145,8 @@ class Subscriber {
           ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
-      case 203:
-      case 204:
-        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
+      case 200:
+        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
@@ -159,8 +164,9 @@ class Subscriber {
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
         break;
-      case 200:
-        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
+      case 203:
+      case 204:
+        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
@@ -191,7 +197,11 @@ class Subscriber {
     $link_tag = '';
     switch($num) {
       case 100:
+      case 205:
         $view = 'subscriber/feed';
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
       case 101:
         $view = 'subscriber/feed';
@@ -214,14 +224,13 @@ class Subscriber {
         $hub = p3k\url\add_query_params_to_url($hub, ['error'=>'wrongtag']);
         $view = 'subscriber/feed-atom';
         break;
-      case 203:
-      case 204:
+      case 200:
         $view = 'subscriber/feed';
-        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
+        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
-        break;
+        break;      
       case 201:
       case 202:
         $view = 'subscriber/feed';
@@ -236,13 +245,14 @@ class Subscriber {
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
         break;
-      case 200:
+      case 203:
+      case 204:
         $view = 'subscriber/feed';
-        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
+        $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
-        break;      
+        break;
     }
 
     $response->getBody()->write(view($view, [
@@ -255,13 +265,7 @@ class Subscriber {
       'hub' => $hub,
       'self' => $self
     ]));
-    if($num == 100) {
-      return $response
-        ->withHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'>; rel="self"')
-        ->withAddedHeader('Link', '<'.Config::$base.'blog/'.$num.'/'.$token.'/hub>; rel="hub"');
-    } else {
-      return $response;
-    }
+    return $response;
   }
 
   public function hub(ServerRequestInterface $request, ResponseInterface $response, $args) {
@@ -393,6 +397,32 @@ class Subscriber {
 
         // Send the verification to the callback URL
         $result = Hub::verify($num, $token, $mode, $params['hub_callback'], $subscriber->challenge);
+
+        // For 205, the correct response from the subscriber is rejecting the request
+        if($num == 205) {
+          if($result['code'] == 404) {
+            // Subscriber MUST return 404 to properly reject it
+
+            streaming_publish($token, [
+              'type' => 'success',
+              'mode' => $mode,
+              'callback_response' => $result['debug'],
+              'topic' => $params['hub_topic'],
+              'skip_continue' => false,
+              'success_message' => 'Great! Your subscriber properly rejected the subscription request for an invalid topic URL'
+            ]);
+
+            $response->getBody()->write('Your subscriber properly rejected the subscription request for an invalid topic URL.');
+            return $response;
+          } else {
+            return self::hub_error($token, [
+              'error' => 'subscription_not_rejected',
+              'error_description' => 'The callback URL did not reject the incorrect verification request. The callback URL must return HTTP 404 to reject the request.',
+              'code' => $result['code'],
+              'callback_response' => $result['debug']
+            ], 400);
+          }
+        }
 
         // Check that the subscriber echo'd back the challenge
         if(floor($result['code']/100) == 2 && $result['body'] == $subscriber->challenge) {

@@ -46,22 +46,27 @@
       <tr>
         <td></td>
         <td><a href="/subscriber/201">201</a></td>
-        <td>Subscribing to a temporarily redirected topic</td>
+        <td>Subscribing to a topic URL that sends an HTTP 302 temporary redirect</td>
       </tr>
       <tr>
         <td></td>
         <td><a href="/subscriber/202">202</a></td>
-        <td>Subscribing to a permanently redirected topic</td>
+        <td>Subscribing to a topic URL that sends an HTTP 301 permanent redirect</td>
       </tr>
       <tr>
         <td></td>
         <td><a href="/subscriber/203">203</a></td>
-        <td>Subscribing to a temporarily redirected hub</td>
+        <td>Subscribing to a hub that sends a 302 temporary redirect</td>
       </tr>
       <tr>
         <td></td>
         <td><a href="/subscriber/204">204</a></td>
-        <td>Subscribing to a permanently redirected hub</td>
+        <td>Subscribing to a hub that sends a 301 permanent redirect</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><a href="/subscriber/205">205</a></td>
+        <td>Rejects a verification request with an invalid topic URL</td>
       </tr>
     </table>
 
