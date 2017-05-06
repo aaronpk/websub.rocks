@@ -62,6 +62,9 @@ class Hub {
     if($num == 107 || $num == 108) {
       $topic .= '?redirect=complete';
     }
+    if($num == 109) {
+      $topic .= '?self=other';
+    }
     $params = [
       'hub.mode' => $mode,
       'hub.topic' => $topic,
@@ -79,6 +82,9 @@ class Hub {
 
     if($num == 107 || $num == 108) {
       $self .= '?redirect=complete';
+    }
+    if($num == 109) {
+      $self .= '?self=other';
     }
 
     $hub = Config::$base . 'blog/' . $num . '/' . $token . '/hub';
@@ -100,6 +106,9 @@ class Hub {
     $response = new \Zend\Diactoros\Response();
     if($num == 107 || $num == 108) {
       $_GET['redirect'] = 'complete';
+    }
+    if($num == 109) {
+      $_GET['self'] = 'other';
     }
     $request = \Zend\Diactoros\ServerRequestFactory::fromGlobals(
       $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES

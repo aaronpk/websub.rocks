@@ -17,6 +17,7 @@
       <li><a href="/subscriber/106">106</a> - Subscribing to a permanently redirected hub</li>
       <li><a href="/subscriber/107">107</a> - Subscribing to a temporarily redirected topic</li>
       <li><a href="/subscriber/108">108</a> - Subscribing to a permanently redirected topic</li>
+      <li><a href="/subscriber/109">109</a> - Subscribing to a URL that reports a different rel=self</li>
       <li>more soon...</li>
       <!-- 
       <li><a href="/subscriber/103">103</a> - Test unsubscribing</li>

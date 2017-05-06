@@ -41,6 +41,8 @@ class Subscriber {
         return 'Subscribing to a Temporarily Redirected Topic';
       case 108:
         return 'Subscribing to a Permanently Redirected Topic';
+      case 109:
+        return 'Subscribing to a URL with a Different rel=self';
     }
   }
 
@@ -81,6 +83,9 @@ class Subscriber {
         break;
       case 108:
         $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
+        break;
+      case 109:
+        $description = '<p>This test reports a different rel=self URL from the URL used to retrieve it.</p>';
         break;
       default:
         throw new \Exception('This test is not configured');
@@ -154,6 +159,12 @@ class Subscriber {
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
         break;
+      case 109:
+        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        break;
     }
     return $response;
   }
@@ -224,6 +235,14 @@ class Subscriber {
             ->withHeader('Link', '<'.$self.'>; rel="self"')
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
+        break;
+      case 109:
+        $view = 'subscriber/feed';
+        $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
+        $response = $response
+          ->withHeader('Link', '<'.$self.'>; rel="self"')
+          ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        break;      
     }
 
     $response->getBody()->write(view($view, [
@@ -296,6 +315,9 @@ class Subscriber {
 
         if($num == 107 || $num == 108) {
           $expected_topic = p3k\url\add_query_params_to_url($expected_topic, ['redirect'=>'complete']);
+        }
+        if($num == 109) {
+          $expected_topic = p3k\url\add_query_params_to_url($expected_topic, ['self'=>'other']);
         }
 
         if($params['hub_topic'] != $expected_topic) {
