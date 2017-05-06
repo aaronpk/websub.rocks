@@ -33,15 +33,15 @@ class Subscriber {
         return 'RSS Feed Discovery';
       case 104:
         return 'Discovery Priority';
-      case 105:
+      case 203:
         return 'Subscribing to a Temporarily Redirected Hub';
-      case 106:
+      case 204:
         return 'Subscribing to a Permanently Redirected Hub';
-      case 107:
+      case 201:
         return 'Subscribing to a Temporarily Redirected Topic';
-      case 108:
+      case 202:
         return 'Subscribing to a Permanently Redirected Topic';
-      case 109:
+      case 200:
         return 'Subscribing to a URL with a Different rel=self';
     }
   }
@@ -72,19 +72,19 @@ class Subscriber {
       case 104:
         $description = '<p>This test checks that you are prioritizing HTTP Link headers over document link tags. If you can successfully subcribe to this feed you have passed the test. You will fail the test if you attempt to subscribe to the wrong feed.</p>';
         break;
-      case 105:
+      case 203:
         $description = '<p>This test checks that you can subscribe to a hub that sends a 307 temporary redirect to a new hub. This is used when the hub changes its own URL.</p>';
         break;
-      case 106:
+      case 204:
         $description = '<p>This test checks that you can subscribe to a hub that sends a 308 permanent redirect to a new hub. This is used when the hub changes its own URL.</p>';
         break;
-      case 107:
+      case 201:
         $description = '<p>This test checks that you can subscribe to a topic that sends a 301 permanent redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
         break;
-      case 108:
+      case 202:
         $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
         break;
-      case 109:
+      case 200:
         $description = '<p>This test reports a different rel=self URL from the URL used to retrieve it.</p>';
         break;
       default:
@@ -139,15 +139,15 @@ class Subscriber {
           ->withAddedHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
-      case 105:
-      case 106:
+      case 203:
+      case 204:
         $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
-      case 107:
-      case 108:
+      case 201:
+      case 202:
         $self = p3k\url\add_query_params_to_url($self, ['redirect'=>'complete']);
         if(!isset($query['redirect'])) {
           return $response
@@ -159,7 +159,7 @@ class Subscriber {
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
         break;
-      case 109:
+      case 200:
         $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
@@ -214,21 +214,21 @@ class Subscriber {
         $hub = p3k\url\add_query_params_to_url($hub, ['error'=>'wrongtag']);
         $view = 'subscriber/feed-atom';
         break;
-      case 105:
-      case 106:
+      case 203:
+      case 204:
         $view = 'subscriber/feed';
         $hub = p3k\url\add_query_params_to_url($hub, ['redirect'=>'true']);
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
-      case 107:
-      case 108:
+      case 201:
+      case 202:
         $view = 'subscriber/feed';
         $self = p3k\url\add_query_params_to_url($self, ['redirect'=>'complete']);
         if(!isset($query['redirect'])) {
           return $response
-            ->withStatus(($num == 107 ? 302 : 301))
+            ->withStatus(($num == 201 ? 302 : 301))
             ->withHeader('Location', $self);
         } else {
           $response = $response
@@ -236,7 +236,7 @@ class Subscriber {
             ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         }
         break;
-      case 109:
+      case 200:
         $view = 'subscriber/feed';
         $self = p3k\url\add_query_params_to_url($self, ['self'=>'other']);
         $response = $response
@@ -313,10 +313,10 @@ class Subscriber {
         // Check that the topic matches
         $expected_topic = Config::$base . 'blog/' . $num . '/' . $token;
 
-        if($num == 107 || $num == 108) {
+        if($num == 201 || $num == 202) {
           $expected_topic = p3k\url\add_query_params_to_url($expected_topic, ['redirect'=>'complete']);
         }
-        if($num == 109) {
+        if($num == 200) {
           $expected_topic = p3k\url\add_query_params_to_url($expected_topic, ['self'=>'other']);
         }
 
@@ -347,12 +347,12 @@ class Subscriber {
               ], 400);
             }
             break;
-          case 105:
-          case 106:
+          case 203:
+          case 204:
             if(isset($query['redirect']) && $query['redirect'] == 'true') {
               // Send a redirect
               $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
-              return $response->withStatus(($num == 105 ? 307 : 308))
+              return $response->withStatus(($num == 203 ? 307 : 308))
                 ->withHeader('Location', $hub);
             }
             break;
