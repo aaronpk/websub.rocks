@@ -37,6 +37,10 @@ class Subscriber {
         return 'Subscribing to a Temporarily Redirected Hub';
       case 106:
         return 'Subscribing to a Permanently Redirected Hub';
+      case 107:
+        return 'Subscribing to a Temporarily Redirected Topic';
+      case 108:
+        return 'Subscribing to a Permanently Redirected Topic';
     }
   }
 
@@ -72,6 +76,12 @@ class Subscriber {
       case 106:
         $description = '<p>This test checks that you can subscribe to a hub that sends a 308 permanent redirect to a new hub. This is used when the hub changes its own URL.</p>';
         break;
+      case 107:
+        $description = '<p>This test checks that you can subscribe to a topic that sends a 301 permanent redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
+        break;
+      case 108:
+        $description = '<p>This test checks that you can subscribe to a topic that sends a 302 temporary redirect to a new topic. This is used to migrate subscriptions to a new URL, such as when moving an account to a new domain name.</p>';
+        break;
       default:
         throw new \Exception('This test is not configured');
     }
@@ -91,6 +101,8 @@ class Subscriber {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
+
+    $query = $request->getQueryParams();
 
     streaming_publish($token, [
       'type' => 'discover',
@@ -129,6 +141,19 @@ class Subscriber {
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
+      case 107:
+      case 108:
+        $self = p3k\url\add_query_params_to_url($self, ['redirect'=>'complete']);
+        if(!isset($query['redirect'])) {
+          return $response
+            ->withStatus(301)
+            ->withHeader('Location', $self);
+        } else {
+          $response = $response
+            ->withHeader('Link', '<'.$self.'>; rel="self"')
+            ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        }
+        break;
     }
     return $response;
   }
@@ -137,6 +162,8 @@ class Subscriber {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
+
+    $query = $request->getQueryParams();
 
     streaming_publish($token, [
       'type' => 'discover',
@@ -184,6 +211,19 @@ class Subscriber {
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
+      case 107:
+      case 108:
+        $view = 'subscriber/feed';
+        $self = p3k\url\add_query_params_to_url($self, ['redirect'=>'complete']);
+        if(!isset($query['redirect'])) {
+          return $response
+            ->withStatus(($num == 107 ? 302 : 301))
+            ->withHeader('Location', $self);
+        } else {
+          $response = $response
+            ->withHeader('Link', '<'.$self.'>; rel="self"')
+            ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
+        }
     }
 
     $response->getBody()->write(view($view, [
@@ -252,7 +292,13 @@ class Subscriber {
         }
 
         // Check that the topic matches
-        if($params['hub_topic'] != Config::$base . 'blog/' . $num . '/' . $token) {
+        $expected_topic = Config::$base . 'blog/' . $num . '/' . $token;
+
+        if($num == 107 || $num == 108) {
+          $expected_topic = p3k\url\add_query_params_to_url($expected_topic, ['redirect'=>'complete']);
+        }
+
+        if($params['hub_topic'] != $expected_topic) {
           return self::hub_error($token, [
             'error' => 'invalid_topic',
             'error_description' => 'The topic provided is not allowed at this hub.'

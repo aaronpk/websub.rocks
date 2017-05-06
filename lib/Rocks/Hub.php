@@ -59,6 +59,9 @@ class Hub {
     $client = new HTTP(Config::$useragent);
     // build new callback URL with additional query params
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
+    if($num == 107 || $num == 108) {
+      $topic .= '?redirect=complete';
+    }
     $params = [
       'hub.mode' => $mode,
       'hub.topic' => $topic,
@@ -73,6 +76,11 @@ class Hub {
 
   private static function deliver($num, $token, $callback, $content, $sig) {
     $self = Config::$base . 'blog/' . $num . '/' . $token;
+
+    if($num == 107 || $num == 108) {
+      $self .= '?redirect=complete';
+    }
+
     $hub = Config::$base . 'blog/' . $num . '/' . $token . '/hub';
 
     $headers = [
@@ -90,6 +98,9 @@ class Hub {
 
   private static function render_page($num, $token) {
     $response = new \Zend\Diactoros\Response();
+    if($num == 107 || $num == 108) {
+      $_GET['redirect'] = 'complete';
+    }
     $request = \Zend\Diactoros\ServerRequestFactory::fromGlobals(
       $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES
     );
