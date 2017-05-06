@@ -392,6 +392,9 @@ class Subscriber {
               'error' => 'invalid_subscription',
               'error_description' => 'No subscription was found for the given topic and callback.'
             ], 404);
+          } else {
+            $subscriber->challenge = p3k\random_string(20);
+            $subscriber->save();
           }
         }
 
@@ -429,7 +432,7 @@ class Subscriber {
           if($mode == 'subscribe') {
             $subscriber->active = 1;
             $subscriber->date_expires = date('Y-m-d H:i:s', time() + Hub::$LEASE_SECONDS);
-          } else {
+          } elseif($mode == 'unsubscribe') {
             $subscriber->active = 0;
             $subscriber->date_expires = date('Y-m-d H:i:s');
           }

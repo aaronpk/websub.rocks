@@ -37,6 +37,7 @@ class Hub {
           // (a real hub should retry for some amount of time)
           if(floor($response['code'] / 100) != 2) {
             $sub->active = 0;
+            $sub->date_expires = date('Y-m-d H:i:s');
           }
 
           $sub->notification_response_code = $response['code'];
