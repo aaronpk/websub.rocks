@@ -123,7 +123,6 @@ function handle_start_response(data) {
 
   socket.onmessage = function(event) {
     var data = JSON.parse(event.data);
-    console.log(data);
     switch(data.text.type) {
       case 'verify_success':
         $("#step-verify-result h3").text("Subscription Confirmed!");

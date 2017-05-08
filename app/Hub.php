@@ -9,6 +9,7 @@ use Config;
 use Rocks\Feed;
 use p3k\HTTP;
 use p3k;
+use IndieWeb;
 
 class Hub {
 
@@ -345,6 +346,45 @@ class Hub {
       ]);
       return $response;
     }
+
+    // The notification MUST contain a rel=self and rel=hub header
+    $link_header = 'Link: '.$request->getHeaderLine('Link'); // this function combines multiple Link headers into one
+    $parsed_link_headers = IndieWeb\http_rels($link_header);
+    if(!isset($parsed_link_headers['hub'])) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'link_header',
+        'description' => 'The notification is missing the HTTP Link header with rel=hub indicating the hub this came from.',
+      ]);
+      return $response;
+    }
+    if($parsed_link_headers['hub'][0] != $hub->url) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'link_header',
+        'description' => 'The HTTP Link header with rel=hub was not set to the correct value.',
+        'debug' => $link_header
+      ]);
+      return $response;
+    }
+    if(!isset($parsed_link_headers['self'])) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'link_header',
+        'description' => 'The notification is missing the HTTP Link header with rel=self indicating the topic URL of this notification.',
+      ]);
+      return $response;
+    }
+    if($parsed_link_headers['hub'][0] != $hub->url) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'link_header',
+        'description' => 'The HTTP Link header with rel=self was not set to the correct value.',
+        'debug' => $link_header
+      ]);
+      return $response;
+    }
+
 
     // Check for presence of or absence of signature
     $sent_signature = $request->getHeaderLine('X-Hub-Signature');
