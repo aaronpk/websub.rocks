@@ -322,13 +322,15 @@ class Hub {
       similar_text($notification_body, $topic['body'], $percent);
       $invalid = $percent < 5;
     } else {
-      $invalid = ($notification_body != $topic['body']);
+      $invalid = (trim($notification_body) != trim($topic['body']));
     }
     if($invalid) {
+      $description = 'The notification body did not match the contents of the topic URL. Length of topic URL: ('.strlen($topic['body']).') Length of notification body: ('.strlen($notification_body).')';
+
       streaming_publish($token, [
         'type' => 'notification',
         'error' => 'body_mismatch',
-        'description' => 'The notification body did not match the contents of the topic URL.',
+        'description' => $description,
       ]);
       return $response;
     }
