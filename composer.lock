@@ -955,12 +955,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/aaronpk/p3k-websub.git",
-                "reference": "9edfe6ee186759a833d4f9e0f576bae2d49c761f"
+                "reference": "3e37fbb3e8865f159b8adaaab9569e5984bc8890"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aaronpk/p3k-websub/zipball/9edfe6ee186759a833d4f9e0f576bae2d49c761f",
-                "reference": "9edfe6ee186759a833d4f9e0f576bae2d49c761f",
+                "url": "https://api.github.com/repos/aaronpk/p3k-websub/zipball/3e37fbb3e8865f159b8adaaab9569e5984bc8890",
+                "reference": "3e37fbb3e8865f159b8adaaab9569e5984bc8890",
                 "shasum": ""
             },
             "require": {
@@ -997,7 +997,7 @@
                 "pubsubhubbub",
                 "websub"
             ],
-            "time": "2017-05-01 19:28:58"
+            "time": "2017-05-08 15:26:11"
         },
         {
             "name": "php-http/client-common",

@@ -67,7 +67,7 @@
       <p>The POST request will contain the following parameters:</p>
       <ul>
         <li><code>hub.mode=publish</code></li>
-        <li><code>hub.topic=&lt;the generated topic URL&gt;</code></li>
+        <li><code>hub.topic=&lt;the topic URL for this test&gt;</code></li>
       </ul>
       <p>Upon receiving this request, the hub should fetch the topic URL, and deliver the contents to the subscriber.</p>
       <button class="ui button" id="publish-new-post">Create Post</button>
@@ -76,6 +76,14 @@
 
   <section class="content hidden" id="waiting-for-notification">
     <div class="ui active indeterminate centered inline text loader">Waiting for notification</div>
+  </section>
+
+  <section class="content hidden" id="notification">
+    <div class="ui message" id="step-notification-result">
+      <h3></h3>
+      <p></p>
+    </div>
+    <pre class="debug"></pre>
   </section>
 
 </div>
@@ -115,6 +123,7 @@ function handle_start_response(data) {
 
   socket.onmessage = function(event) {
     var data = JSON.parse(event.data);
+    console.log(data);
     switch(data.text.type) {
       case 'verify_success':
         $("#step-verify-result h3").text("Subscription Confirmed!");
@@ -131,7 +140,23 @@ function handle_start_response(data) {
         break;
       case 'notification':
         // a WebSub notification was received
-        // TODO show success/error messages
+        // show success/error messages
+        if(data.text.error) {
+          $("#step-notification-result").addClass("error").removeClass("success");
+          $("#step-notification-result h3").text('Error');
+          $("#step-notification-result p").text(data.text.description);
+        } else {
+          $("#step-notification-result").addClass("success").removeClass("error");
+          $("#step-notification-result h3").text('Success');
+          $("#step-notification-result p").text(data.text.description);
+          $("#waiting-for-notification").addClass("hidden");
+        }
+        $("#notification").removeClass("hidden");
+        if(data.text.debug) {
+          $("#notification pre").removeClass("hidden").text(data.text.debug);
+        } else {
+          $("#notification pre").addClass("hidden");
+        }
     }
   }
 
@@ -165,9 +190,12 @@ function continue_publishing() {
 }
 
 $("#publish-new-post").click(function(){
+  $("#publish-new-post").addClass("loading");
   $.post("/hub/"+test+"/pub/"+token, {
+    action: "create"
   }, function(data){
-
+    $("#publish-new-post").removeClass("loading");
+    $("#waiting-for-notification").removeClass("hidden");
   });
 });
 

@@ -91,6 +91,9 @@ class Hub {
     $hub->token = $token;
     $hub->topic = $topic_url;
     $hub->publisher = $publisher;
+
+    $hub->secret = p3k\random_string(20);
+
     $hub->save();
 
     return new JsonResponse([
@@ -118,7 +121,10 @@ class Hub {
 
     // Start the subscription process at the hub
     $callback = Config::$base.'hub/'.$num.'/sub/'.$token;
-    $subscription = $client->subscribe($hub_url, $topic_url, $callback);
+    $subscription_params = [];
+    if($hub->secret) 
+      $subscription_params['secret'] = $hub->secret;
+    $subscription = $client->subscribe($hub_url, $topic_url, $callback, $subscription_params);
 
     if($subscription['code'] == 202) {
       $result = 'Queued';
@@ -239,10 +245,25 @@ class Hub {
       return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
     }
 
+    $posts = Feed::get_posts_in_feed($token);
+    $ids = array_column($posts, 'id');
+    $post = ORM::for_table('quotes')
+      ->where_not_in('id', $ids)->order_by_expr('RAND()')
+      ->limit(1)->find_one();
+
     // Add a new post to the blog
+    $data = Feed::add_post_to_feed($token, $post);
 
     // Notify the hub of new content
+    $http = new p3k\HTTP(Config::$useragent);
+    $http->post($hub->url, http_build_query([
+      'hub.mode' => 'publish',
+      'hub.topic' => $hub->topic,
+    ]));
 
+    return new JsonResponse([
+      'result' => 'published'
+    ]);
   }
 
   // a WebSub delivery notification
@@ -257,12 +278,101 @@ class Hub {
       return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
     }
 
+    $http = new p3k\HTTP(Config::$useragent);
+
+    // Fetch the topic URL so we know what the notification should look like
+    $topic = $http->get($hub->topic);
+
     // Check for notification payload
+    $notification_body = $request->getBody()->__toString();
+
+    if(trim($notification_body) == '') {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'empty_payload',
+        'description' => 'The notification body did not include any content. Make sure the hub sends the contents of the topic URL in the notification payload. This is known as a "fat ping".'
+      ]);
+      return $response;
+    }
+
     // Make sure it matches what's expected
-    // Check for presence of or asbsence of signature
+    if($hub->publisher == 'remote') {
+      // Allow slight differences in the body for remote feeds
+      // in order to allow cookie/csrf/other per-request differences
+      similar_text($notification_body, $topic['body'], $percent);
+      $invalid = $percent < 5;
+    } else {
+      $invalid = ($notification_body != $topic['body']);
+    }
+    if($invalid) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'body_mismatch',
+        'description' => 'The notification body did not match the contents of the topic URL.',
+      ]);
+      return $response;
+    }
 
-    // Report errors via the streaming channel
+    $content_type_debug = 'Topic Content-Type: '.$topic['headers']['Content-Type']."\n"
+      . "Content-Type sent:  ".$request->getHeaderLine('Content-type')."\n";
 
+    // Make sure they sent a content type header that matches the source
+    if($request->getHeaderLine('Content-Type') != $topic['headers']['Content-Type']) {
+      streaming_publish($token, [
+        'type' => 'notification',
+        'error' => 'content_type_mismatch',
+        'description' => 'The content-type of the notification sent did not match the content-type of the topic URL. The hub must send a content-type header that matches the topic URL.',
+        'debug' => $content_type_debug
+      ]);
+      return $response;
+    }
+
+    // Check for presence of or absence of signature
+    $sent_signature = $request->getHeaderLine('X-Hub-Signature');
+    $signature_debug = '';
+
+    if($hub->secret == '') {
+      // Make sure the hub did not send a signature
+      if($sent_signature) {
+        streaming_publish($token, [
+          'type' => 'notification',
+          'error' => 'signature',
+          'description' => 'The hub sent a signature, but the subscriber was not expecting one.'
+        ]);
+        return $response;
+      }
+    } else {
+      // Check that the hub sent a signature
+      if(!$sent_signature) {
+        streaming_publish($token, [
+          'type' => 'notification',
+          'error' => 'signature',
+          'description' => 'The hub did not send a signature, but the subscriber sent a secret during the subscription process. Hubs must support sending a signature when the subscription was made with a secret.'
+        ]);
+        return $response;
+      }
+
+      // Compute the signature and make sure it matches what the hub sent
+      $verified = p3k\WebSub\Client::verify_signature($notification_body, $sent_signature, $hub->secret);
+      $signature_debug = "Signature: ".$sent_signature."\n";
+      if(!$verified) {
+        streaming_publish($token, [
+          'type' => 'notification',
+          'error' => 'signature_mismatch',
+          'description' => 'The signature sent by the hub did not match what we expected. Check that you are using a valid hashing algorithm and computing the signature correctly.',
+          'debug' => $signature_debug
+        ]);
+        return $response;
+      }
+    }
+
+    streaming_publish($token, [
+      'type' => 'notification',
+      'error' => false,
+      'description' => 'Great! Your hub sent a valid WebSub notification payload to the subscriber!',
+      'debug' => $content_type_debug.$signature_debug
+    ]);
+    return $response;
   }
 
 

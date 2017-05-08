@@ -522,7 +522,7 @@ class Subscriber {
       ], 404);
     }
 
-    $ids = array_map(function($i){ return $i['id']; }, $posts);
+    $ids = array_column($posts, 'id');
     $post = ORM::for_table('quotes')
       ->where_not_in('id', $ids)->order_by_expr('RAND()')
       ->limit(1)->find_one();
