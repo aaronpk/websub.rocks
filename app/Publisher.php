@@ -27,6 +27,7 @@ class Publisher {
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
+    $this->client->set_timeout(10);
     $params = $request->getParsedBody();
     if(!$params) {
       $params = $request->getQueryParams();
@@ -195,12 +196,13 @@ class Publisher {
     }
 
     $debug = json_encode($data, JSON_PRETTY_PRINT);
+    $debug = $data;
 
     return new JsonResponse([
       'hub' => $hub,
       'self' => $self,
       'jwt' => $jwt,
-      'debug' => $debug
+      'debug' => $topic
     ]);
   }
 
@@ -208,6 +210,7 @@ class Publisher {
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
+    $this->client->set_timeout(10);
     $params = $request->getParsedBody();
 
     $data = (array)JWT::decode($params['jwt'], Config::$secret, ['HS256']);
