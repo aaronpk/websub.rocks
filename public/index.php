@@ -43,6 +43,19 @@ $route->map('GET', '/subscriber/{num}', 'App\\Subscriber::get_test');
 $route->map('GET', '/hub', 'App\\Hub::index');
 $route->map('GET', '/hub/{num}', 'App\\Hub::get_test');
 
+$route->map('POST', '/hub/{num}/start', 'App\\Hub::post_start');
+$route->map('POST', '/hub/{num}/subscribe', 'App\\Hub::post_subscribe');
+
+// The user's hub will communicate with these two
+$route->map('GET', '/hub/{num}/sub/{token}', 'App\\Hub::get_subscriber');
+$route->map('POST', '/hub/{num}/sub/{token}', 'App\\Hub::post_subscriber');
+
+// For local topics, the user's hub will fetch the contents here
+$route->map('HEAD', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
+$route->map('GET', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
+
+// The user triggers adding a new post with this route
+$route->map('POST', '/hub/{num}/pub/{token}', 'App\\Hub::post_publisher');
 
 
 

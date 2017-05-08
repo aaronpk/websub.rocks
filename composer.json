@@ -14,7 +14,8 @@
     "indieweb/link-rel-parser": "0.1.*",
     "firebase/php-jwt": "^4.0",
     "p3k/http": "0.1.*",
-    "p3k/utils": "1.*"
+    "p3k/utils": "1.*",
+    "p3k/websub": "dev-master"
   },
   "autoload": {
     "psr-4": {

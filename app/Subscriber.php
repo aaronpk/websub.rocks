@@ -7,6 +7,7 @@ use Zend\Diactoros\Response\JsonResponse;
 use ORM;
 use Config;
 use Rocks\Hub;
+use Rocks\Feed;
 use p3k\HTTP;
 use p3k;
 
@@ -134,7 +135,7 @@ class Subscriber {
       'method' => 'HEAD',
     ]);
 
-    self::set_up_posts_in_feed($token);
+    Feed::set_up_posts_in_feed($token);
 
     $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
     $self = Config::$base.'blog/'.$num.'/'.$token;
@@ -205,9 +206,9 @@ class Subscriber {
       'method' => 'GET',
     ]);
 
-    self::set_up_posts_in_feed($token);
+    Feed::set_up_posts_in_feed($token);
     
-    $posts = self::get_posts_in_feed($token);
+    $posts = Feed::get_posts_in_feed($token);
 
     $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
     $self = Config::$base.'blog/'.$num.'/'.$token;
@@ -299,7 +300,7 @@ class Subscriber {
     $num = $args['num'];
     $token = $args['token'];
 
-    $posts = self::get_posts_in_feed($token);
+    $posts = Feed::get_posts_in_feed($token);
 
     // The hub doesn't exist until there are posts in it. Discovering the hub will create posts.
     if(count($posts) == 0) {
@@ -513,7 +514,7 @@ class Subscriber {
     $num = $args['num'];
     $token = $args['token'];
 
-    $posts = self::get_posts_in_feed($token);
+    $posts = Feed::get_posts_in_feed($token);
 
     if(count($posts) == 0) {
       return new JsonResponse([
@@ -526,7 +527,7 @@ class Subscriber {
       ->where_not_in('id', $ids)->order_by_expr('RAND()')
       ->limit(1)->find_one();
 
-    $data = self::add_post_to_feed($token, $post);
+    $data = Feed::add_post_to_feed($token, $post);
     
     switch($num) {
       case 301:
@@ -542,7 +543,7 @@ class Subscriber {
     if($request->getMethod() == 'GET') {
       return $response->withHeader('Location', '/blog/'.$num.'/'.$token)->withStatus(302);
     } else {
-      $posts = self::get_posts_in_feed($token);
+      $posts = Feed::get_posts_in_feed($token);
       $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
       $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
 
@@ -606,44 +607,6 @@ class Subscriber {
     streaming_publish($token, $params);
     return new JsonResponse($params, $code);
   }
-
-  private static function set_up_posts_in_feed($token) {
-    $key = 'websub.rocks::feed::'.$token;
-    if(p3k\redis()->llen($key) == 0) {
-      $quotes = ORM::for_table('quotes')->order_by_expr('RAND()')->limit(3)->find_many();
-      foreach($quotes as $quote) {
-        self::add_post_to_feed($token, $quote);
-      }
-    }
-    self::touch_feed($token);
-  }
-
-  private static function touch_feed($token) {
-    $key = 'websub.rocks::feed::'.$token;
-    p3k\redis()->expire($key, 86400);
-  }
-
-  private static function add_post_to_feed($token, $post) {
-    $key = 'websub.rocks::feed::'.$token;
-    $data = [
-      'id' => $post->id,
-      'author' => $post->author,
-      'content' => $post->content,
-      'published' => date('Y-m-d H:i:s'),
-    ];
-    p3k\redis()->lpush($key, json_encode($data));
-    // Trim the list to show the last N posts
-    p3k\redis()->ltrim($key, 0, 9);
-    return $data;
-  }
-
-  private static function get_posts_in_feed($token) {
-    $key = 'websub.rocks::feed::'.$token;
-    $len = p3k\redis()->llen($key);
-    $items = p3k\redis()->lrange($key, 0, $len-1);
-    return array_map(function($i){ return json_decode($i, true); }, $items);
-  }
-
 
 }
 
