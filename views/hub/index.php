@@ -13,9 +13,9 @@
 
     <ul>
       <li><a href="/hub/100">100</a> - Typical subscriber request</li>
+      <li><a href="/hub/101">101</a> - Subscriber includes a secret</li>
       <li>more soon...</li>
       <!-- 
-      <li><a href="/hub/101">101</a> - Subscriber includes a secret</li>
       <li><a href="/hub/102">102</a> - Subscriber sends additional parameters</li>
       <li><a href="/hub/103">103</a> - Subscriber re-subscribes before subscription expires</li>
       <li><a href="/hub/104">104</a> - Unsubscribe request</li>

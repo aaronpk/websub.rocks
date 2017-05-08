@@ -5,7 +5,7 @@
 <div class="single-column">
 
   <section id="step-1" class="content">
-    <h2><?= $num ?>: Typical Subscriber Request</h2>
+    <h2><?= $num ?>: <?= $name ?></h2>
 
     <div class="ui top attached tabular menu">
       <a class="item active" data-tab="first">Public Hub</a>
@@ -37,7 +37,7 @@
 
     <br>
 
-    <p>This subscriber will include only the parameters <code>hub.mode</code>, <code>hub.topic</code> and <code>hub.callback</code>. The hub should deliver notifications with no signature.</p>
+    <p><?= $description ?></p>
   </section>
 
   <section id="step-2" class="hidden content">

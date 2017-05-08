@@ -25,11 +25,26 @@ class Hub {
     p3k\session_setup();
     $num = $args['num'];
 
+    switch($num) {
+      case 100:
+        $name = 'Typical Subscriber Request';
+        $description = 'This subscriber will include only the parameters <code>hub.mode</code>, <code>hub.topic</code> and <code>hub.callback</code>. The hub should deliver notifications with no signature.';
+        break;
+      case 101:
+        $name = 'Subscription with Secret';
+        $description = 'This subscriber will include the parameters <code>hub.mode</code>, <code>hub.topic</code>, <code>hub.callback</code> and <code>hub.secret</code>. The hub should deliver notifications with a signature computed using this secret.';
+        break;
+      default:
+        $response = $response->withStatus(404);
+        return $response;
+        break;
+    }
 
-
-    $response->getBody()->write(view('hub/'.$num, [
+    $response->getBody()->write(view('hub/test', [
       'title' => 'WebSub Rocks!',
       'num' => $num,
+      'name' => $name,
+      'description' => $description
     ]));
     return $response;
   }
@@ -92,7 +107,11 @@ class Hub {
     $hub->topic = $topic_url;
     $hub->publisher = $publisher;
 
-    $hub->secret = p3k\random_string(20);
+    switch($num) {
+      case 101:
+        $hub->secret = p3k\random_string(20);
+        break;
+    }
 
     $hub->save();
 
@@ -374,7 +393,6 @@ class Hub {
     ]);
     return $response;
   }
-
 
 }
 
