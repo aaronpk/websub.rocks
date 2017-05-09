@@ -39,6 +39,10 @@ class Hub {
         $name = 'Subscriber Sends Additional Parameters';
         $description = 'This subscriber will include some additional parameters in the request, which must be ignored by the hub if the hub doesn\'t recognize them.';
         break;
+      case 103:
+        $name = 'Re-Subscribes Before Expiration';
+        $description = 'This subscriber tests whether the hub allows subscriptions to be re-subscribed before they expire. The hub must allow a subscription to be re-activated, and must update the previous subscription based on the topic+callback pair, rather than creating a new subscription.';
+        break;
       default:
         $response = $response->withStatus(404);
         return $response;
@@ -311,7 +315,18 @@ class Hub {
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
 
     if(!$hub) {
-      return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
+      return new JsonResponse([
+        'error' => 'not_found',
+        'error_description' => 'No hub was found for this token'
+      ], 404);
+    }
+
+    // Expire subscribers after 15 minutes
+    if(strtotime($hub->date_created) < (time()-(60*15))) {
+      return new JsonResponse([
+        'error' => 'expired',
+        'error_description' => 'This subscriber is only active for 15 minutes. You\'ll need to start a new test to continue.'
+      ], 404);
     }
 
     $http = new p3k\HTTP(Config::$useragent);

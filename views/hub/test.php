@@ -19,7 +19,7 @@
       <div class="ui form">
         <label>Your Hub URL</label>
         <div class="ui fluid action input">
-          <input type="url" id="hub-url">
+          <input type="url" id="hub-url" value="https://switchboard.tunnlr.xyz/">
           <button class="ui button" type="submit" id="start-test-from-hub">Start</button>
         </div>
       </div>
@@ -29,7 +29,7 @@
       <div class="ui form">
         <label>Your Topic URL</label>
         <div class="ui fluid action input">
-          <input type="url" id="topic-url">
+          <input type="url" id="topic-url" value="https://pk.tunnlr.xyz/">
           <button class="ui button" type="submit" id="start-test-from-topic">Start</button>
         </div>
       </div>
@@ -50,19 +50,23 @@
     <pre class="debug"></pre>
   </section>
 
+  <section class="content hidden" id="waiting-for-subscription">
+    <div class="ui active indeterminate centered inline text loader">Waiting for subscription to be confirmed</div>
+  </section>
+
   <section id="step-verify" class="hidden content">
     <div class="ui message" id="step-verify-result">
       <h3></h3>
       <p></p>
     </div>
 
-    <p>Now that websub.rocks is subscribed to your hub, we can test the delivery of the WebSub notification.</p>
-
     <div class="hidden" id="continue-remote-publisher">
+      <p>Now that websub.rocks is subscribed to your hub, we can test the delivery of the WebSub notification.</p>
       <p>Since you entered your own topic URL, you should now create a new post at that topic and trigger your hub to deliver notifications to all subscribers.</p>
       <p>When this subscriber receives a notification, you will see the results below.</p>
     </div>
     <div class="hidden" id="continue-local-publisher">
+      <p>Now that websub.rocks is subscribed to your hub, we can test the delivery of the WebSub notification.</p>
       <p>Click the button below to create a new post at the test topic URL. This will send a POST request to your hub notifying that there is new content.</p>
       <p>The POST request will contain the following parameters:</p>
       <ul>
@@ -79,12 +83,61 @@
   </section>
 
   <section class="content hidden" id="notification">
-    <div class="ui message" id="step-notification-result">
+    <div class="ui message">
       <h3></h3>
       <p></p>
     </div>
     <pre class="debug"></pre>
   </section>
+
+  <?php if($num == 103): ?>
+
+    <section class="content hidden" id="continue-resubscribe">
+      <p>To continue the test, click the "re-subscribe" button below. This will cause this subscriber to subscribe to the hub again, before the subscription has expired.</p>
+
+      <button class="ui button" id="btn-resubscribe">Re-Subscribe</button>
+    </section>
+
+    <section class="content hidden" id="resubscribe-result">
+      <div class="ui message hidden" id="resubscribe-result-message">
+        <h3></h3>
+        <p></p>
+      </div>
+
+      <h3>The raw response from the subscription request is below</h3>
+      <pre class="debug"></pre>
+    </section>
+
+    <section class="content hidden" id="waiting-for-resubscription">
+      <div class="ui active indeterminate centered inline text loader">Waiting for subscription to be confirmed</div>
+    </section>
+
+    <section id="step-resubscribe-confirmed" class="hidden content">
+      <div class="ui message">
+        <h3></h3>
+        <p></p>
+      </div>
+
+      <div class="hidden" id="continue-resubscribe-remote-publisher">
+        <p>Now that websub.rocks has re-subscribed to your hub, we will check to make sure it receives just one notification when you make a new post.</p>
+        <p>Publish a new post and trigger your hub to send a notification.</p>
+      </div>
+      <div class="hidden" id="continue-resubscribe-local-publisher">
+        <p>Now that websub.rocks has re-subscribed to your hub, we will check to make sure it receives just one notification when you make a new post.</p>
+        <p>Click the button below to create a new post and trigger your hub to send out notifications.</p>
+        <button class="ui button" id="resubscribe-publish-new-post">Create Post</button>
+      </div>
+    </section>
+
+    <section class="content hidden" id="resubscribe-notification">
+      <div class="ui message">
+        <h3></h3>
+        <p></p>
+      </div>
+      <pre class="debug"></pre>
+    </section>
+
+  <?php endif ?>
 
   <div id="bottom"></div>
 </div>
@@ -93,6 +146,10 @@ var test=<?= $num ?>;
 var token;
 var socket;
 var publisher;
+
+var subscribed = false;
+
+var resubscribe_notifications = 0;
 
 $(function(){
   $(".menu .item").tab();
@@ -126,36 +183,96 @@ function handle_start_response(data) {
     var data = JSON.parse(event.data);
     switch(data.text.type) {
       case 'verify_success':
-        $("#step-verify-result h3").text("Subscription Confirmed!");
-        $("#step-verify-result p").text(data.text.description);
-        $("#step-verify-result").addClass("success");
-        $("#step-verify").removeClass("hidden");
-        continue_publishing();
+        // For test 103, we want to do something different when the second subscription is confirmed
+        <?php if($num == 103): ?>
+        if(subscribed) {
+          $("#step-resubscribe-confirmed .message h3").text("Subscription Confirmed!");
+          $("#step-resubscribe-confirmed .message p").text(data.text.description);
+          $("#step-resubscribe-confirmed .message").addClass("success");
+          $("#step-resubscribe-confirmed").removeClass("hidden");
+          $("#waiting-for-resubscription").addClass("hidden");
+          subscribed = true;
+          continue_resubscribe_publishing();
+        } else
+        <?php endif ?>
+        {
+          $("#step-verify-result h3").text("Subscription Confirmed!");
+          $("#step-verify-result p").text(data.text.description);
+          $("#step-verify-result").addClass("success");
+          $("#step-verify").removeClass("hidden");
+          $("#waiting-for-subscription").addClass("hidden");
+          subscribed = true;
+          continue_publishing();
+        }
         break;
       case 'verify_error': 
-        $("#step-verify-result h3").text("Error!");
-        $("#step-verify-result p").text(data.text.description);
-        $("#step-verify-result").addClass("error");
-        $("#step-verify").removeClass("hidden");
+        <?php if($num == 103): ?>
+        if(subscribed) {
+          $("#step-resubscribe-confirmed .message h3").text("Error!");
+          $("#step-resubscribe-confirmed .message p").text(data.text.description);
+          $("#step-resubscribe-confirmed .message").addClass("error");
+          $("#step-resubscribe-confirmed").removeClass("hidden");
+          $("#waiting-for-subscription").addClass("hidden");
+        } else
+        <?php endif ?>
+        {
+          $("#step-verify-result h3").text("Error!");
+          $("#step-verify-result p").text(data.text.description);
+          $("#step-verify-result").addClass("error");
+          $("#step-verify").removeClass("hidden");
+          $("#waiting-for-subscription").addClass("hidden");
+        }
         break;
       case 'notification':
-        // a WebSub notification was received
-        // show success/error messages
-        if(data.text.error) {
-          $("#step-notification-result").addClass("error").removeClass("success");
-          $("#step-notification-result h3").text('Error');
-          $("#step-notification-result p").text(data.text.description);
-        } else {
-          $("#step-notification-result").addClass("success").removeClass("error");
-          $("#step-notification-result h3").text('Success');
-          $("#step-notification-result p").text(data.text.description);
-          $("#waiting-for-notification").addClass("hidden");
-        }
-        $("#notification").removeClass("hidden");
-        if(data.text.debug) {
-          $("#notification pre").removeClass("hidden").text(data.text.debug);
-        } else {
-          $("#notification pre").addClass("hidden");
+        // For test 103, the second notification does something different
+        <?php if($num == 103): ?>
+        if(!$("#step-resubscribe-confirmed").hasClass("hidden")) {
+          if(resubscribe_notifications != 0) {
+            // only one notification should be received. show an error if more than one was received.
+            $("#resubscribe-notification .message").addClass("error").removeClass("success");
+            $("#resubscribe-notification .message h3").text('Error');
+            $("#resubscribe-notification .message p").text("A second notification was received. This likely indicates that your hub created a second subscription rather than updating the existing subscription.");
+          } else if(data.text.error) {
+            $("#resubscribe-notification .message").addClass("error").removeClass("success");
+            $("#resubscribe-notification .message h3").text('Error');
+            $("#resubscribe-notification .message p").text(data.text.description);
+          } else {
+            resubscribe_notifications++;
+            $("#resubscribe-notification .message").addClass("success").removeClass("error");
+            $("#resubscribe-notification .message h3").text('Success');
+            $("#resubscribe-notification .message p").text(data.text.description);
+            $("#waiting-for-notification").addClass("hidden");
+          }
+          $("#resubscribe-notification").removeClass("hidden");
+          if(data.text.debug) {
+            $("#resubscribe-notification pre").removeClass("hidden").text(data.text.debug);
+          } else {
+            $("#resubscribe-notification pre").addClass("hidden");
+          }
+        } else 
+        <?php endif ?>
+        {
+          // a WebSub notification was received
+          // show success/error messages
+          if(data.text.error) {
+            $("#notification .message").addClass("error").removeClass("success");
+            $("#notification .message h3").text('Error');
+            $("#notification .message p").text(data.text.description);
+          } else {
+            $("#notification .message").addClass("success").removeClass("error");
+            $("#notification .message h3").text('Success');
+            $("#notification .message p").text(data.text.description);
+            $("#waiting-for-notification").addClass("hidden");
+          }
+          $("#notification").removeClass("hidden");
+          if(data.text.debug) {
+            $("#notification pre").removeClass("hidden").text(data.text.debug);
+          } else {
+            $("#notification pre").addClass("hidden");
+          }
+          <?php if($num == 103): ?>
+          $("#continue-resubscribe").removeClass("hidden");
+          <?php endif; ?>
         }
         scroll_to_bottom();
         break;
@@ -172,6 +289,8 @@ function scroll_to_bottom() {
 }
 
 function handle_subscribe_response(data) {
+  $("#waiting-for-subscription").removeClass("hidden");
+
   $("#step-2-result h3").text(data.result);
   $("#step-2-result p").text(data.description);
   if(data.status == 'error') {
@@ -195,6 +314,18 @@ function continue_publishing() {
   }
 }
 
+function continue_resubscribe_publishing() {
+  if(publisher == "remote") {
+    $("#continue-resubscribe-remote-publisher").removeClass("hidden");
+    waiting = $("#waiting-for-notification").detach();
+    $("#step-resubscribe-confirmed").after(waiting);
+    $("#waiting-for-notification").removeClass("hidden");
+  } else {
+    $("#continue-resubscribe-local-publisher").removeClass("hidden");
+  }
+  scroll_to_bottom();
+}
+
 $("#publish-new-post").click(function(){
   $("#publish-new-post").addClass("loading");
   scroll_to_bottom();
@@ -202,6 +333,47 @@ $("#publish-new-post").click(function(){
     action: "create"
   }, function(data){
     $("#publish-new-post").removeClass("loading");
+    $("#waiting-for-notification").removeClass("hidden");
+    scroll_to_bottom();
+  });
+});
+
+$("#btn-resubscribe").click(function(){
+  $("#btn-resubscribe").addClass("loading");
+  $.post("/hub/"+test+"/subscribe", {
+    token: token,
+    action: "resubscribe"
+  }, function(data){
+    $("#continue-resubscribe").addClass("hidden");
+    $("#waiting-for-resubscription").removeClass("hidden");
+
+    $("#resubscribe-result-message h3").text(data.result);
+    $("#resubscribe-result-message p").text(data.description);
+    if(data.status == 'error') {
+      $("#resubscribe-result-message").addClass("error");
+    } else {
+      $("#resubscribe-result-message").addClass("success");
+      $("#step-2").addClass("hidden");
+    }
+    $("#resubscribe-result-message").removeClass("hidden");
+
+    $("#resubscribe-result pre").text(data.hub_response);
+    $("#resubscribe-result").removeClass("hidden");
+
+    scroll_to_bottom();
+  });
+});
+
+
+$("#resubscribe-publish-new-post").click(function(){
+  $("#resubscribe-publish-new-post").addClass("loading");
+  scroll_to_bottom();
+  $.post("/hub/"+test+"/pub/"+token, {
+    action: "create"
+  }, function(data){
+    $("#resubscribe-publish-new-post").removeClass("loading");
+    waiting = $("#waiting-for-notification").detach();
+    $("#step-resubscribe-confirmed").after(waiting);
     $("#waiting-for-notification").removeClass("hidden");
     scroll_to_bottom();
   });
