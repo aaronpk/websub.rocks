@@ -99,7 +99,7 @@
     </section>
 
     <section class="content hidden" id="resubscribe-result">
-      <div class="ui message hidden" id="resubscribe-result-message">
+      <div class="ui message hidden">
         <h3></h3>
         <p></p>
       </div>
@@ -139,6 +139,62 @@
 
   <?php endif ?>
 
+  <?php if($num == 104): ?>
+
+    <section class="content hidden" id="continue-unsubscribe">
+      <p>To continue the test, click the "unsubscribe" button below. This will cause this subscriber to request an unsubscription from the hub.</p>
+
+      <button class="ui button" id="btn-unsubscribe">Unsubscribe</button>
+    </section>
+
+    <section class="content hidden" id="unsubscribe-result">
+      <div class="ui message hidden">
+        <h3></h3>
+        <p></p>
+      </div>
+
+      <h3>The raw response from the unsubscription request is below</h3>
+      <pre class="debug"></pre>
+    </section>
+
+    <section class="content hidden" id="waiting-for-unsubscription">
+      <div class="ui active indeterminate centered inline text loader">Waiting for unsubscription to be confirmed</div>
+    </section>
+
+    <section id="step-unsubscribe-confirmed" class="hidden content">
+      <div class="ui message">
+        <h3></h3>
+        <p></p>
+      </div>
+
+      <div class="hidden" id="continue-unsubscribe-remote-publisher">
+        <p>Now that websub.rocks has unsubscribed from your hub, we will check to make sure it does not receive further notifications when you make a new post.</p>
+        <p>Publish a new post and trigger your hub to send notifications to any remaining subscribers. You should <b>not</b> see a notification appear below.</p>
+      </div>
+      <div class="hidden" id="continue-unsubscribe-local-publisher">
+        <p>Now that websub.rocks has unsubscribed from your hub, we will check to make sure it does not receive further notifications when you make a new post.</p>
+        <p>Click the button below to create a new post and trigger your hub to send out notifications to any remaining subscribers. You should <b>not</b> see a notification appear below.</p>
+        <button class="ui button" id="unsubscribe-publish-new-post">Create Post</button>
+      </div>
+    </section>
+
+    <section class="content hidden" id="unsubscribe-notification">
+      <div class="ui message">
+        <h3></h3>
+        <p></p>
+      </div>
+      <pre class="debug"></pre>
+    </section>
+
+    <section class="content hidden" id="unsubscribe-success">
+      <div class="ui success message">
+        <h3>Success!</h3>
+        <p>It looks like your hub has correctly removed the subscription, since we didn't get a notification after waiting a while!</p>
+      </div>
+    </section>
+
+  <?php endif ?>
+
   <div id="bottom"></div>
 </div>
 <script>
@@ -150,6 +206,7 @@ var publisher;
 var subscribed = false;
 
 var resubscribe_notifications = 0;
+var unsubscribe_notifications = 0;
 
 $(function(){
   $(".menu .item").tab();
@@ -194,6 +251,16 @@ function handle_start_response(data) {
           subscribed = true;
           continue_resubscribe_publishing();
         } else
+        <?php elseif($num == 104): ?>
+        if(subscribed) {
+          $("#step-unsubscribe-confirmed .message h3").text("Unsubscription Confirmed!");
+          $("#step-unsubscribe-confirmed .message p").text(data.text.description);
+          $("#step-unsubscribe-confirmed .message").addClass("success");
+          $("#step-unsubscribe-confirmed").removeClass("hidden");
+          $("#waiting-for-unsubscription").addClass("hidden");
+          subscribed = true;
+          continue_unsubscribe_publishing();
+        } else
         <?php endif ?>
         {
           $("#step-verify-result h3").text("Subscription Confirmed!");
@@ -212,6 +279,14 @@ function handle_start_response(data) {
           $("#step-resubscribe-confirmed .message p").text(data.text.description);
           $("#step-resubscribe-confirmed .message").addClass("error");
           $("#step-resubscribe-confirmed").removeClass("hidden");
+          $("#waiting-for-subscription").addClass("hidden");
+        } else
+        <?php elseif($num == 104): ?>
+        if(subscribed) {
+          $("#step-unsubscribe-confirmed .message h3").text("Error!");
+          $("#step-unsubscribe-confirmed .message p").text(data.text.description);
+          $("#step-unsubscribe-confirmed .message").addClass("error");
+          $("#step-unsubscribe-confirmed").removeClass("hidden");
           $("#waiting-for-subscription").addClass("hidden");
         } else
         <?php endif ?>
@@ -250,6 +325,13 @@ function handle_start_response(data) {
             $("#resubscribe-notification pre").addClass("hidden");
           }
         } else 
+        <?php elseif($num == 104): ?>
+        if(!$("#step-unsubscribe-confirmed").hasClass("hidden")) {
+          // If any followup notification is received, they failed 
+          $("#unsubscribe-notification .message").addClass("error").removeClass("success");
+          $("#unsubscribe-notification .message h3").text('Error');
+          $("#unsubscribe-notification .message p").text('A notification was received, but this subscriber attempted to unsubscribe from the topic. Make sure your hub properly deactivates the subscription.');
+        } else
         <?php endif ?>
         {
           // a WebSub notification was received
@@ -272,6 +354,8 @@ function handle_start_response(data) {
           }
           <?php if($num == 103): ?>
           $("#continue-resubscribe").removeClass("hidden");
+          <?php elseif($num == 104): ?>
+          $("#continue-unsubscribe").removeClass("hidden");
           <?php endif; ?>
         }
         scroll_to_bottom();
@@ -280,7 +364,8 @@ function handle_start_response(data) {
   }
 
   $.post("/hub/"+test+"/subscribe", {
-    token: token
+    token: token,
+    action: "subscribe"
   }, handle_subscribe_response);
 }
 
@@ -326,6 +411,19 @@ function continue_resubscribe_publishing() {
   scroll_to_bottom();
 }
 
+function continue_unsubscribe_publishing() {
+  if(publisher == "remote") {
+    $("#continue-unsubscribe-remote-publisher").removeClass("hidden");
+    waiting = $("#waiting-for-notification").detach();
+    $("#step-unsubscribe-confirmed").after(waiting);
+    $("#waiting-for-notification").removeClass("hidden");
+    wait_for_unsubscribe_success();
+  } else {
+    $("#continue-unsubscribe-local-publisher").removeClass("hidden");
+  }
+  scroll_to_bottom();
+}
+
 $("#publish-new-post").click(function(){
   $("#publish-new-post").addClass("loading");
   scroll_to_bottom();
@@ -347,15 +445,15 @@ $("#btn-resubscribe").click(function(){
     $("#continue-resubscribe").addClass("hidden");
     $("#waiting-for-resubscription").removeClass("hidden");
 
-    $("#resubscribe-result-message h3").text(data.result);
-    $("#resubscribe-result-message p").text(data.description);
+    $("#resubscribe-result .message h3").text(data.result);
+    $("#resubscribe-result .message p").text(data.description);
     if(data.status == 'error') {
-      $("#resubscribe-result-message").addClass("error");
+      $("#resubscribe-result .message").addClass("error");
     } else {
-      $("#resubscribe-result-message").addClass("success");
+      $("#resubscribe-result .message").addClass("success");
       $("#step-2").addClass("hidden");
     }
-    $("#resubscribe-result-message").removeClass("hidden");
+    $("#resubscribe-result .message").removeClass("hidden");
 
     $("#resubscribe-result pre").text(data.hub_response);
     $("#resubscribe-result").removeClass("hidden");
@@ -364,6 +462,31 @@ $("#btn-resubscribe").click(function(){
   });
 });
 
+$("#btn-unsubscribe").click(function(){
+  $("#btn-unsubscribe").addClass("loading");
+  $.post("/hub/"+test+"/subscribe", {
+    token: token,
+    action: "unsubscribe"
+  }, function(data){
+    $("#continue-unsubscribe").addClass("hidden");
+    $("#waiting-for-unsubscription").removeClass("hidden");
+
+    $("#unsubscribe-result .message h3").text(data.result);
+    $("#unsubscribe-result .message p").text(data.description);
+    if(data.status == 'error') {
+      $("#unsubscribe-result .message").addClass("error");
+    } else {
+      $("#unsubscribe-result .message").addClass("success");
+      $("#step-2").addClass("hidden");
+    }
+    $("#unsubscribe-result .message").removeClass("hidden");
+
+    $("#unsubscribe-result pre").text(data.hub_response);
+    $("#unsubscribe-result").removeClass("hidden");
+
+    scroll_to_bottom();
+  });
+});
 
 $("#resubscribe-publish-new-post").click(function(){
   $("#resubscribe-publish-new-post").addClass("loading");
@@ -378,5 +501,27 @@ $("#resubscribe-publish-new-post").click(function(){
     scroll_to_bottom();
   });
 });
+
+$("#unsubscribe-publish-new-post").click(function(){
+  $("#unsubscribe-publish-new-post").addClass("loading");
+  scroll_to_bottom();
+  $.post("/hub/"+test+"/pub/"+token, {
+    action: "create"
+  }, function(data){
+    $("#unsubscribe-publish-new-post").removeClass("loading");
+    waiting = $("#waiting-for-notification").detach();
+    $("#step-unsubscribe-confirmed").after(waiting);
+    $("#waiting-for-notification").removeClass("hidden");
+    wait_for_unsubscribe_success();
+    scroll_to_bottom();
+  });
+});
+
+function wait_for_unsubscribe_success() {
+  setTimeout(function(){
+    $("#waiting-for-notification").addClass("hidden");
+    $("#unsubscribe-success").removeClass("hidden");
+  }, 15000);
+}
 
 </script>

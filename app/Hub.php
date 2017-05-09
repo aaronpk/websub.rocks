@@ -43,6 +43,10 @@ class Hub {
         $name = 'Re-Subscribes Before Expiration';
         $description = 'This subscriber tests whether the hub allows subscriptions to be re-subscribed before they expire. The hub must allow a subscription to be re-activated, and must update the previous subscription based on the topic+callback pair, rather than creating a new subscription.';
         break;
+      case 104:
+        $name = 'Unsubscription';
+        $description = 'This test will first subscribe to a topic, and will then send an unsubscription request. You will be able to test that the unsubscription is confirmed by seeing that a notification is not received when a new post is published.';
+        break;
       default:
         $response = $response->withStatus(404);
         return $response;
@@ -150,7 +154,7 @@ class Hub {
     $callback = Config::$base.'hub/'.$num.'/sub/'.$token;
 
     $subscription_params = [
-      'hub.mode' => 'subscribe',
+      'hub.mode' => ($params['action'] == 'unsubscribe' ? 'unsubscribe' : 'subscribe'),
       'hub.topic' => $topic_url,
       'hub.callback' => $callback,
     ];
@@ -203,21 +207,22 @@ class Hub {
     // Verify the hub sent the correct challenge
 
     if(!isset($params['hub_mode'])) {
-      return self::verify_error('The verification request was missing the hub.mode parameter');
+      return self::verify_error($token, 'The verification request was missing the hub.mode parameter');
     }
-    if($params['hub_mode'] != 'subscribe') {
-      return self::verify_error('The hub.mode parameter was not set to "subscribe"');
+
+    if(!in_array($params['hub_mode'], ['subscribe','unsubscribe'])) {
+      return self::verify_error($token, 'The hub.mode parameter was not set to "subscribe" or "unsubscribe"');
     }
 
     if(!isset($params['hub_topic'])) {
-      return self::verify_error('The verification request was missing the hub.topic parameter');
+      return self::verify_error($token, 'The verification request was missing the hub.topic parameter');
     }
     if($params['hub_topic'] != $hub->topic) {
-      return self::verify_error('The hub.topic parameter was incorrect');
+      return self::verify_error($token, 'The hub.topic parameter was incorrect');
     }
 
     if(!isset($params['hub_challenge'])) {
-      return self::verify_error('The verification request was missing the hub.challenge parameter');
+      return self::verify_error($token, 'The verification request was missing the hub.challenge parameter');
     }
 
     streaming_publish($token, [
