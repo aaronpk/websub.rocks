@@ -11,7 +11,7 @@
     <? if(isset($error_debug)): ?>
       <pre class="small"><?= $error_debug ?></pre>
     <? endif; ?>
-    <a href="<?= is_logged_in() ? '/dashboard' : '/' ?>">Start Over</a>
+    <a href="<?= is_logged_in() ? '/' : '/' ?>">Start Over</a>
   </div>
 
   <?php 

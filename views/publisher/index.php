@@ -7,7 +7,7 @@
   <section class="content" id="setup">
     <h2>Testing your Publisher</h2>
 
-    <p>Enter the URL to your page that advertises its hub. This website will attempt to discover the hub, and then subscribe to updates.</p>
+    <p>Enter the URL to your page that advertises its hub. This test will attempt to discover the hub, and then subscribe to updates.</p>
 
     <div class="ui form">
       <div class="ui fluid action input">

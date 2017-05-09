@@ -75,7 +75,7 @@ class Auth {
     $_SESSION['user_id'] = $user->id;
     $_SESSION['email'] = $user->email;
     $_SESSION['login'] = 'success';
-    return $response->withHeader('Location', '/dashboard')->withStatus(302);
+    return $response->withHeader('Location', '/')->withStatus(302);
   }
 
   public function signout(ServerRequestInterface $request, ResponseInterface $response) {
