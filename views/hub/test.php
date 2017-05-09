@@ -19,7 +19,7 @@
       <div class="ui form">
         <label>Your Hub URL</label>
         <div class="ui fluid action input">
-          <input type="url" id="hub-url" value="https://switchboard.tunnlr.xyz/">
+          <input type="url" id="hub-url">
           <button class="ui button" type="submit" id="start-test-from-hub">Start</button>
         </div>
       </div>
@@ -29,7 +29,7 @@
       <div class="ui form">
         <label>Your Topic URL</label>
         <div class="ui fluid action input">
-          <input type="url" id="topic-url" value="https://pk.tunnlr.xyz/">
+          <input type="url" id="topic-url">
           <button class="ui button" type="submit" id="start-test-from-topic">Start</button>
         </div>
       </div>
