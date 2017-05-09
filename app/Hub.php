@@ -35,6 +35,10 @@ class Hub {
         $name = 'Subscription with Secret';
         $description = 'This subscriber will include the parameters <code>hub.mode</code>, <code>hub.topic</code>, <code>hub.callback</code> and <code>hub.secret</code>. The hub should deliver notifications with a signature computed using this secret.';
         break;
+      case 102:
+        $name = 'Subscriber Sends Additional Parameters';
+        $description = 'This subscriber will include some additional parameters in the request, which must be ignored by the hub if the hub doesn\'t recognize them.';
+        break;
       default:
         $response = $response->withStatus(404);
         return $response;
@@ -121,7 +125,7 @@ class Hub {
     ]);
   }  
 
-  // The user triggers the subscription request
+  // Start the subscription request, triggered automatically after the user presses start
   public function post_subscribe(ServerRequestInterface $request, ResponseInterface $response, $args) {
     p3k\session_setup();
     $num = $args['num'];
@@ -137,14 +141,26 @@ class Hub {
     $topic_url = $hub->topic;
 
     $http = new p3k\HTTP(Config::$useragent);
-    $client = new p3k\WebSub\Client($http);      
 
     // Start the subscription process at the hub
     $callback = Config::$base.'hub/'.$num.'/sub/'.$token;
-    $subscription_params = [];
-    if($hub->secret) 
-      $subscription_params['secret'] = $hub->secret;
-    $subscription = $client->subscribe($hub_url, $topic_url, $callback, $subscription_params);
+
+    $subscription_params = [
+      'hub.mode' => 'subscribe',
+      'hub.topic' => $topic_url,
+      'hub.callback' => $callback,
+    ];
+    if($hub->secret)
+      $subscription_params['hub.secret'] = $hub->secret;
+
+    switch($num) {
+      case 102:
+        $subscription_params['foo'] = 'bar';
+        $subscription_params['hub.foo'] = 'hub.bar';
+        break;
+    }
+
+    $subscription = $http->post($hub_url, http_build_query($subscription_params));
 
     if($subscription['code'] == 202) {
       $result = 'Queued';

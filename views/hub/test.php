@@ -86,6 +86,7 @@
     <pre class="debug"></pre>
   </section>
 
+  <div id="bottom"></div>
 </div>
 <script>
 var test=<?= $num ?>;
@@ -156,12 +157,18 @@ function handle_start_response(data) {
         } else {
           $("#notification pre").addClass("hidden");
         }
+        scroll_to_bottom();
+        break;
     }
   }
 
   $.post("/hub/"+test+"/subscribe", {
     token: token
   }, handle_subscribe_response);
+}
+
+function scroll_to_bottom() {
+  document.getElementById("bottom").scrollIntoView();  
 }
 
 function handle_subscribe_response(data) {
@@ -190,11 +197,13 @@ function continue_publishing() {
 
 $("#publish-new-post").click(function(){
   $("#publish-new-post").addClass("loading");
+  scroll_to_bottom();
   $.post("/hub/"+test+"/pub/"+token, {
     action: "create"
   }, function(data){
     $("#publish-new-post").removeClass("loading");
     $("#waiting-for-notification").removeClass("hidden");
+    scroll_to_bottom();
   });
 });
 
