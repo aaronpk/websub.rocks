@@ -23,4 +23,8 @@ class Controller {
     return $response;
   }
 
+  public function implementation_reports(ServerRequestInterface $request, ResponseInterface $response) {
+    return $response->withHeader('Location', 'https://github.com/w3c/websub/tree/master/implementation-reports')->withStatus(302);
+  }
+
 }

@@ -17,6 +17,7 @@ $container->share('emitter', Zend\Diactoros\Response\SapiEmitter::class);
 $route = new League\Route\RouteCollection($container);
 
 $route->map('GET', '/', 'App\\Controller::index');
+$route->map('GET', '/implementation-reports', 'App\\Controller::implementation_reports');
 
 $route->map('POST', '/auth/start', 'App\\Auth::start');
 $route->map('GET', '/auth/code', 'App\\Auth::code');
