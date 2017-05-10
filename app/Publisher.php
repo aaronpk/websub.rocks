@@ -36,6 +36,13 @@ class Publisher {
     $topic_url = $params['topic'];
     $topic = $this->client->get($params['topic']);
 
+    if($topic['error']) {
+      return new JsonResponse([
+        'error' => $topic['error'],
+        'error_description' => $topic['error_description']
+      ]);
+    }
+
     $http = [
       'hub' => [],
       'self' => [],

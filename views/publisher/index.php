@@ -113,7 +113,12 @@ function start_discover_step() {
 
       $("#subscribe").removeClass("loading");
       $("#step-hub-loading").addClass("hidden");
-      if(!data.hub || !data.self) {
+      if(data.error) {
+        $("#step-hub").addClass("hidden");
+        $("#step-hub-error .discovery").addClass("hidden");
+        $("#step-hub-error .description").html("<h3>Error: "+data.error+"</h3><p>"+data.error_description+"</p>");
+        $("#step-hub-error").removeClass("hidden");
+      } else if(!data.hub || !data.self) {
         // If either hub or self were missing, show an error
         $("#step-hub").addClass("hidden");
         var desc = "";
