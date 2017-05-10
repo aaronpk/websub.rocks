@@ -225,6 +225,12 @@ class Hub {
       return self::verify_error($token, 'The verification request was missing the hub.challenge parameter');
     }
 
+    if($params['hub_mode'] == 'subscribe') {
+      if(!isset($params['hub_lease_seconds'])) {
+        return self::verify_error($token, 'The verification request was missing the hub.lease_seconds parameter');
+      }
+    }
+
     streaming_publish($token, [
       'type' => 'verify_success',
       'description' => 'The hub sent the verification request'
