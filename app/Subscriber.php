@@ -569,10 +569,10 @@ class Subscriber {
             case 301:
               if(floor($d['code']/100) == 2) {
                 $result = 'success';
-                $message = 'Great! Your subscriber returned '.$d['code'].'. The payload delivered contains an invalid signature, so you should ensure your subscriber does not process this notification.';
+                $message = 'Your subscriber returned '.$d['code'].'. The payload delivered contains an invalid signature, so you should ensure your subscriber does not process this notification.';
               } else {
-                $result = 'fail';
-                $message = 'Your subscriber failed to acknowledge the delivery successfully. You need to return HTTP 2xx even if the signature doesn\'t match. Your subscriber returned '.$d['code'].'.';
+                $result = 'success';
+                $message = 'Great! Your subscriber returned '.$d['code'].' to reject the invalid signature.';
               }
               break;
             case 302:
