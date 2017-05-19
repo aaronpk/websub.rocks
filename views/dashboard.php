@@ -19,4 +19,11 @@
     <p>If you are writing a standalone open hub, you can enter the hub URL in the tests and a temporary blog will be created that points to your hub. If you are writing an integrated hub, then you can provide a URL that advertises your hub to test it, in which case you'll need to trigger adding new posts manually.</p>
   </section>
 
+  <section class="content">
+    <h2>Implementation Reports</h2>
+
+    <p>As you're working through the websub.rocks tests, please fill out an implementation report to update the W3C working group about your implementation!</p>
+    <p>It isn't too hard to do. Just fork the WebSub repo, and copy the appropriate <a href="https://github.com/w3c/websub/tree/master/implementation-reports">implementation report template</a> to a new file, check off the boxes that apply to you, then submit a pull request.</p>
+  </section>
+
 </div>
