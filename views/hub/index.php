@@ -17,6 +17,8 @@
       <li><a href="/hub/102">102</a> - Subscriber sends additional parameters</li>
       <li><a href="/hub/103">103</a> - Subscriber re-subscribes before the subscription expires</li>
       <li><a href="/hub/104">104</a> - Unsubscribe request</li>
+      <li><a href="/hub/105">105</a> - Plaintext content</li>
+      <li><a href="/hub/106">106</a> - JSON content</li>
     </ul>
 
 

@@ -47,6 +47,14 @@ class Hub {
         $name = 'Unsubscription';
         $description = 'This test will first subscribe to a topic, and will then send an unsubscription request. You will be able to test that the unsubscription is confirmed by seeing that a notification is not received when a new post is published.';
         break;
+      case 105:
+        $name = 'Plaintext Topic';
+        $description = 'This test will check whether your hub can handle delivering content that is not HTML or XML. The content at the topic URL of this test is plaintext.';
+        break;
+      case 106:
+        $name = 'JSON Topic';
+        $description = 'This test will check whether your hub can handle delivering content that is not HTML or XML. The content at the topic URL of this test is JSON.';
+        break;
       default:
         $response = $response->withStatus(404);
         return $response;
@@ -274,13 +282,37 @@ class Hub {
       ->withHeader('Link', '<'.$self_url.'>; rel="self"')
       ->withAddedHeader('Link', '<'.$hub_url.'>; rel="hub"');
 
-    $response->getBody()->write(view('hub/feed', [
-      'title' => 'WebSub Rocks!',
-      'num' => $num,
-      'token' => $token,
-      'posts' => $posts,
-      'link_tag' => '',
-    ]));
+    switch($num) {
+      case 105:
+        // Plaintext body
+        $response = $response->withHeader('Content-Type', 'text/plain');
+        $response->getBody()->write(view('hub/feed-txt', [
+          'title' => 'WebSub Rocks! Test '.$num,
+          'num' => $num,
+          'token' => $token,
+          'posts' => $posts,
+        ]));
+        break;
+      case 106:
+        // JSON body
+        $response = $response->withHeader('Content-Type', 'application/json');
+        $response->getBody()->write(view('hub/feed-json', [
+          'title' => 'WebSub Rocks! Test '.$num,
+          'num' => $num,
+          'token' => $token,
+          'posts' => $posts,
+          'self' => $self_url
+        ]));
+        break;
+      default:
+        $response->getBody()->write(view('hub/feed', [
+          'title' => 'WebSub Rocks! Test '.$num,
+          'num' => $num,
+          'token' => $token,
+          'posts' => $posts,
+          'link_tag' => '',
+        ]));
+    }
     return $response;
   }
 
