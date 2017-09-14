@@ -9,10 +9,14 @@
 
     <div class="ui top attached tabular menu">
       <a class="item active" data-tab="first">Public Hub</a>
+      <?php if(!in_array($num, [105,106])): ?>
       <a class="item" data-tab="second">Integrated Hub</a>
+      <?php endif; ?>
     </div>
     <div class="ui bottom attached tab segment active" data-tab="first">
+      <?php if(!in_array($num, [105,106])): ?>
       <p>If your hub is a "public hub", e.g. it is a standalone service that can be used by any publisher, then you can use this option. If your hub is integrated with the publishing software, choose the other tab.</p>
+      <?php endif; ?>
       <p>Provide the URL of your hub below. Once you do so, a sample blog will be generated that points to your hub, and this test will attempt to subscribe to updates about the blog from your hub.</p>
       <p>Make sure your hub allows subscriptions for this domain. (Some hubs will require registration before a new domain is allowed to use them.)</p>
 
@@ -24,6 +28,7 @@
         </div>
       </div>
     </div>
+    <?php if(!in_array($num, [105,106])): ?>
     <div class="ui bottom attached tab segment" data-tab="second">
       <p>Enter a topic URL that advertises its hub as the hub you want to test. You will be responsible for triggering the hub to send notifications to the subscriber.</p>
       <div class="ui form">
@@ -34,6 +39,7 @@
         </div>
       </div>
     </div>
+    <?php endif; ?>
 
     <br>
 
