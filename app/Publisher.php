@@ -78,9 +78,9 @@ class Publisher {
         foreach($xpath->query('*/link[@href]') as $link) {
           $rel = $link->getAttribute('rel');
           $url = $link->getAttribute('href');
-          if($rel == 'hub') {
+          if(in_array('hub', preg_split('/\s+/', $rel))) {
             $doc['hub'][] = $url;
-          } else if($rel == 'self') {
+          if(in_array('self', preg_split('/\s+/', $rel))) {
             $doc['self'][] = $url;
           }
         }
