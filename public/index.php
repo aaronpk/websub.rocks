@@ -25,6 +25,8 @@ $route->map('GET', '/auth/signout', 'App\\Auth::signout');
 
 $route->map('GET', '/dashboard', 'App\\Controller::dashboard');
 
+$route->map('POST', '/cron/cleanup', 'App\\Controller::clean_logins');
+
 $route->map('GET', '/publisher', 'App\\Publisher::index');
 $route->map('POST', '/publisher/discover', 'App\\Publisher::discover');
 $route->map('POST', '/publisher/subscribe', 'App\\Publisher::subscribe');
