@@ -12,3 +12,7 @@ $(function(){
     return false;
   });
 });
+
+$(function(){
+  $("input[name=galaxy]").val("vegancheese");
+});

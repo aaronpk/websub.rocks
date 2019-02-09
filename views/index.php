@@ -23,6 +23,7 @@
         <div class="ui fluid action input">
           <input type="email" name="email" placeholder="you@example.com">
           <button class="ui button">Sign In</button>
+          <input type="hidden" name="galaxy" value="cheese">
         </div>
       </form>
 

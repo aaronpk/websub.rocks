@@ -13,6 +13,10 @@ class Auth {
   public function start(ServerRequestInterface $request, ResponseInterface $response) {
     $params = $request->getParsedBody();
 
+    if($params['galaxy'] != 'vegancheese') {
+      return $response->withHeader('Location', '/')->withStatus(302);
+    }
+
     $user = ORM::for_table('users')->where('email', $params['email'])->find_one();
 
     if(!$user) {
@@ -34,7 +38,7 @@ class Auth {
     $mg = new Mailgun(Config::$mailgun['key']);
     $mg->sendMessage(Config::$mailgun['domain'], [
       'from'     => Config::$mailgun['from'],
-      'to'       => $user->email, 
+      'to'       => $user->email,
       'subject'  => 'Your websub.rocks Login URL',
       'text'     => "Click on the link below to sign in to websub.rocks\n\n$login_url\n"
     ]);
