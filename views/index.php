@@ -11,7 +11,7 @@
   <? if(p3k\flash('login')): ?>
     <div class="ui success message">
       <div class="header">Welcome!</div>
-      <p>You are logged in as <?= $_SESSION['email'] ?>!</p>
+      <p>You are logged in as <?= $_SESSION['email'] ?? 'unknown' ?>!</p>
     </div>
   <? endif; ?>
 
