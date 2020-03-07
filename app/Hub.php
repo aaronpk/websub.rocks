@@ -201,19 +201,6 @@ class Hub {
     ]);
   }
 
-  public function test(ServerRequestInterface $request, $args) {
-    $response = new Response;
-    $link_header = 'Link: '.$request->getHeaderLine('Link'); // this function combines multiple Link headers into one
-    $parsed_link_headers = IndieWeb\http_rels($link_header);
-
-    return new JsonResponse([
-      'link_header_line' => $request->getHeaderLine('Link'),
-      'parsed' => $parsed_link_headers,
-      '$_SERVER' => $_SERVER,
-    ]);
-  }
-
-
   // The hub sends the verification challenge here
   public function get_subscriber(ServerRequestInterface $request, $args) {
     $response = new Response;

@@ -7,11 +7,10 @@ use Psr\Http\Message\ServerRequestInterface;
 $container = new League\Container\Container;
 $container->share('response', Zend\Diactoros\Response::class);
 $container->share('request', function () {
-  return Zend\Diactoros\ServerRequestFactory::fromGlobals(
+  return Laminas\Diactoros\ServerRequestFactory::fromGlobals(
     $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES
   );
 });
-$container->share('emitter', Zend\Diactoros\Response\SapiEmitter::class);
 
 $route = new League\Route\Router;
 
@@ -58,9 +57,6 @@ $route->map('GET', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
 
 // The user triggers adding a new post with this route
 $route->map('POST', '/hub/{num}/pub/{token}', 'App\\Hub::post_publisher');
-
-$route->map('POST', '/test', 'App\\Hub::test');
-
 
 $route->map('GET', '/image', 'ImageProxy::image');
 
