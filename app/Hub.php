@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\JsonResponse;
 use ORM;
@@ -13,16 +13,18 @@ use IndieWeb;
 
 class Hub {
 
-  public function index(ServerRequestInterface $request, ResponseInterface $response) {
+  public function index(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
-    
+
     $response->getBody()->write(view('hub/index', [
       'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }
 
-  public function get_test(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function get_test(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
 
@@ -71,17 +73,18 @@ class Hub {
   }
 
   // Start a new test
-  public function post_start(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function post_start(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
 
     $params = $request->getParsedBody();
-  
+
     // Generate a new token for this test
     $token = p3k\random_string(20);
 
     $http = new p3k\HTTP(Config::$useragent);
-    $client = new p3k\WebSub\Client($http);      
+    $client = new p3k\WebSub\Client($http);
 
     // If they provided a topic URL, then we first need to discover the hub
     if(isset($params['topic'])) {
@@ -139,10 +142,11 @@ class Hub {
     return new JsonResponse([
       'token' => $token,
     ]);
-  }  
+  }
 
   // Start the subscription request, triggered automatically after the user presses start
-  public function post_subscribe(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function post_subscribe(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
 
@@ -197,9 +201,22 @@ class Hub {
     ]);
   }
 
+  public function test(ServerRequestInterface $request, $args) {
+    $response = new Response;
+    $link_header = 'Link: '.$request->getHeaderLine('Link'); // this function combines multiple Link headers into one
+    $parsed_link_headers = IndieWeb\http_rels($link_header);
+
+    return new JsonResponse([
+      'link_header_line' => $request->getHeaderLine('Link'),
+      'parsed' => $parsed_link_headers,
+      '$_SERVER' => $_SERVER,
+    ]);
+  }
+
 
   // The hub sends the verification challenge here
-  public function get_subscriber(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function get_subscriber(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -257,7 +274,8 @@ class Hub {
 
 
   // The hub gets the content of the topic here
-  public function get_publisher(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function get_publisher(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -317,7 +335,8 @@ class Hub {
   }
 
   // For public hubs, the user will trigger a new post be added here
-  public function post_publisher(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function post_publisher(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -350,7 +369,8 @@ class Hub {
   }
 
   // a WebSub delivery notification
-  public function post_subscriber(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function post_subscriber(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];

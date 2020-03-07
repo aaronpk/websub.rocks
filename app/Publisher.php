@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\JsonResponse;
 use ORM, Config;
@@ -14,16 +14,18 @@ class Publisher {
 
   public $client;
 
-  public function index(ServerRequestInterface $request, ResponseInterface $response) {
+  public function index(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
-    
+
     $response->getBody()->write(view('publisher/index', [
       'title' => 'WebSub Rocks!',
     ]));
     return $response;
   }
 
-  public function discover(ServerRequestInterface $request, ResponseInterface $response) {
+  public function discover(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
@@ -78,11 +80,10 @@ class Publisher {
         foreach($xpath->query('*/link[@href]') as $link) {
           $rel = $link->getAttribute('rel');
           $url = $link->getAttribute('href');
-          if(in_array('hub', preg_split('/\s+/', $rel))) {
+          if(in_array('hub', preg_split('/\s+/', $rel)))
             $doc['hub'][] = $url;
-          if(in_array('self', preg_split('/\s+/', $rel))) {
+          if(in_array('self', preg_split('/\s+/', $rel)))
             $doc['self'][] = $url;
-          }
         }
 
         $doc['type'] = 'html';
@@ -99,7 +100,7 @@ class Publisher {
           $doc['type'] = 'atom';
         }
 
-        // Look for atom link elements in the feed        
+        // Look for atom link elements in the feed
         foreach($xpath->query('/atom:feed/atom:link[@href]') as $href) {
           $rel = $href->getAttribute('rel');
           $url = $href->getAttribute('href');
@@ -213,7 +214,8 @@ class Publisher {
     ]);
   }
 
-  public function subscribe(ServerRequestInterface $request, ResponseInterface $response) {
+  public function subscribe(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
@@ -286,10 +288,11 @@ class Publisher {
   }
 
 
-  public function callback_verify(ServerRequestInterface $request, ResponseInterface $response) {
+  public function callback_verify(ServerRequestInterface $request) {
+    $response = new Response;
     $params = $request->getQueryParams();
 
-    if(!array_key_exists('hub_topic', $params) 
+    if(!array_key_exists('hub_topic', $params)
       || !array_key_exists('hub_challenge', $params)
       || !array_key_exists('hub_lease_seconds', $params)) {
       return new JsonResponse([
@@ -324,7 +327,8 @@ class Publisher {
     return $params['hub_challenge'];
   }
 
-  public function subscription_status(ServerRequestInterface $request, ResponseInterface $response) {
+  public function subscription_status(ServerRequestInterface $request) {
+    $response = new Response;
     $query = $request->getQueryParams();
 
     if(!array_key_exists('token', $query)) {
@@ -350,7 +354,8 @@ class Publisher {
   }
 
 
-  public function callback_deliver(ServerRequestInterface $request, ResponseInterface $response) {
+  public function callback_deliver(ServerRequestInterface $request) {
+    $response = new Response;
     $query = $request->getQueryParams();
     $body = $request->getBody();
 

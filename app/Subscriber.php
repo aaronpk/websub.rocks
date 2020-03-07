@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\JsonResponse;
 use ORM;
@@ -13,9 +13,10 @@ use p3k;
 
 class Subscriber {
 
-  public function index(ServerRequestInterface $request, ResponseInterface $response) {
+  public function index(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
-    
+
     $response->getBody()->write(view('subscriber/index', [
       'title' => 'WebSub Rocks!',
     ]));
@@ -50,12 +51,13 @@ class Subscriber {
         return 'Returns 2xx for Successful Delivery';
       case 301:
         return 'Rejects Invalid Signatures';
-      case 302: 
+      case 302:
         return 'Rejects Distribution with No Signature';
     }
   }
 
-  public function get_test(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function get_test(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
 
@@ -123,7 +125,8 @@ class Subscriber {
     return $response;
   }
 
-  public function head_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function head_feed(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -150,7 +153,7 @@ class Subscriber {
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
-      case 101: 
+      case 101:
         break;
       case 102:
         $response = $response->withHeader('Content-Type', 'application/atom+xml');
@@ -194,7 +197,8 @@ class Subscriber {
     return $response;
   }
 
-  public function get_feed(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function get_feed(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -207,7 +211,7 @@ class Subscriber {
     ]);
 
     Feed::set_up_posts_in_feed($token);
-    
+
     $posts = Feed::get_posts_in_feed($token);
 
     $hub = Config::$base.'blog/'.$num.'/'.$token.'/hub';
@@ -257,7 +261,7 @@ class Subscriber {
         $response = $response
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
-        break;      
+        break;
       case 201:
       case 202:
         $view = 'subscriber/feed';
@@ -295,7 +299,8 @@ class Subscriber {
     return $response;
   }
 
-  public function hub(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function hub(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -509,7 +514,8 @@ class Subscriber {
     }
   }
 
-  public function publish(ServerRequestInterface $request, ResponseInterface $response, $args) {
+  public function publish(ServerRequestInterface $request, $args) {
+    $response = new Response;
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -528,7 +534,7 @@ class Subscriber {
       ->limit(1)->find_one();
 
     $data = Feed::add_post_to_feed($token, $post);
-    
+
     switch($num) {
       case 301:
         $send_secret = 'invalid'; break;

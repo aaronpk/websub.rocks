@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use ORM;
 use IndieAuth;
@@ -14,7 +14,8 @@ class Controller {
     return Config::$base.'endpoints/callback';
   }
 
-  public function index(ServerRequestInterface $request, ResponseInterface $response) {
+  public function index(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup();
 
     $response->getBody()->write(view('index', [
@@ -23,11 +24,13 @@ class Controller {
     return $response;
   }
 
-  public function implementation_reports(ServerRequestInterface $request, ResponseInterface $response) {
+  public function implementation_reports(ServerRequestInterface $request) {
+    $response = new Response;
     return $response->withHeader('Location', 'https://github.com/w3c/websub/tree/master/implementation-reports')->withStatus(302);
   }
 
-  public function clean_logins(ServerRequestInterface $request, ResponseInterface $response) {
+  public function clean_logins(ServerRequestInterface $request) {
+    $response = new Response;
 
     // Delete users who never logged in older than 7 days ago
 

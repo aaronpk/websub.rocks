@@ -2,7 +2,6 @@
 chdir('..');
 include('vendor/autoload.php');
 
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 $container = new League\Container\Container;
@@ -14,7 +13,7 @@ $container->share('request', function () {
 });
 $container->share('emitter', Zend\Diactoros\Response\SapiEmitter::class);
 
-$route = new League\Route\RouteCollection($container);
+$route = new League\Route\Router;
 
 $route->map('GET', '/', 'App\\Controller::index');
 $route->map('GET', '/implementation-reports', 'App\\Controller::implementation_reports');
@@ -60,6 +59,7 @@ $route->map('GET', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
 // The user triggers adding a new post with this route
 $route->map('POST', '/hub/{num}/pub/{token}', 'App\\Hub::post_publisher');
 
+$route->map('POST', '/test', 'App\\Hub::test');
 
 
 $route->map('GET', '/image', 'ImageProxy::image');
@@ -67,14 +67,14 @@ $route->map('GET', '/image', 'ImageProxy::image');
 $templates = new League\Plates\Engine(dirname(__FILE__).'/../views');
 
 try {
-  $response = $route->dispatch($container->get('request'), $container->get('response'));
-  $container->get('emitter')->emit($response);
+  $response = $route->dispatch($container->get('request'));
+  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response);
 } catch(League\Route\Http\Exception\NotFoundException $e) {
   $response = $container->get('response');
   $response->getBody()->write("Not Found\n");
-  $container->get('emitter')->emit($response->withStatus(404));
+  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response->withStatus(404));
 } catch(League\Route\Http\Exception\MethodNotAllowedException $e) {
   $response = $container->get('response');
   $response->getBody()->write("Method not allowed\n");
-  $container->get('emitter')->emit($response->withStatus(405));
+  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response->withStatus(405));
 }

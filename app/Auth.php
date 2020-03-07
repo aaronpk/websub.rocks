@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use ORM;
 use Config;
@@ -10,7 +10,8 @@ use p3k;
 
 class Auth {
 
-  public function start(ServerRequestInterface $request, ResponseInterface $response) {
+  public function start(ServerRequestInterface $request) {
+    $response = new Response;
     $params = $request->getParsedBody();
 
     if($params['galaxy'] != 'vegancheese') {
@@ -49,7 +50,8 @@ class Auth {
     return $response;
   }
 
-  public function code(ServerRequestInterface $request, ResponseInterface $response) {
+  public function code(ServerRequestInterface $request) {
+    $response = new Response;
     $params = $request->getQueryParams();
 
     if(!array_key_exists('code', $params)) {
@@ -82,7 +84,8 @@ class Auth {
     return $response->withHeader('Location', '/')->withStatus(302);
   }
 
-  public function signout(ServerRequestInterface $request, ResponseInterface $response) {
+  public function signout(ServerRequestInterface $request) {
+    $response = new Response;
     p3k\session_setup(true);
     unset($_SESSION['user_id']);
     unset($_SESSION['email']);
