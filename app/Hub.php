@@ -249,6 +249,7 @@ class Hub {
     ]);
 
     $response->getBody()->write($params['hub_challenge']);
+    return $response;
   }
 
   private static function verify_error($token, $description) {
