@@ -4,6 +4,7 @@ namespace App;
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\JsonResponse;
+use Zend\Diactoros\Response\HtmlResponse;
 use ORM, Config;
 use DOMXPath;
 use Firebase\JWT\JWT;
@@ -324,7 +325,7 @@ class Publisher {
       'type' => 'active'
     ]);
 
-    return $params['hub_challenge'];
+    return new HtmlResponse($params['hub_challenge'], 200, ['Content-Type'=>['text/plain']]);
   }
 
   public function subscription_status(ServerRequestInterface $request) {
