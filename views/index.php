@@ -8,14 +8,14 @@
     <p><b><i>WebSub Rocks!</i></b> is a validator to help you test your <a href="https://www.w3.org/TR/websub/">WebSub</a> implementation. Several kinds of tests are available on the site.</p>
   </section>
 
-  <? if(p3k\flash('login')): ?>
+  <?php if(p3k\flash('login')): ?>
     <div class="ui success message">
       <div class="header">Welcome!</div>
       <p>You are logged in as <?= $_SESSION['email'] ?? 'unknown' ?>!</p>
     </div>
-  <? endif; ?>
+  <?php endif; ?>
 
-  <? if(!is_logged_in()): ?>
+  <?php if(!is_logged_in()): ?>
     <section class="content">
       <h3>Sign in to begin</h3>
 
@@ -29,7 +29,7 @@
 
       <p>You will receive an email with a link to sign in.</p>
     </section>
-  <? endif; ?>
+  <?php endif; ?>
 
   <section class="content">
     <h2>Roles</h2>

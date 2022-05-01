@@ -7,7 +7,7 @@
 
   <div id="subscriber-post-list" class="h-feed">
     <span class="p-name hidden">WebSub.rocks Test <?= $num ?></span>
-    <? $this->insert('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]) ?>
+    <?php $this->insert('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]) ?>
   </div>
 
 </div>

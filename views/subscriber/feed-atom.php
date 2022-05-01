@@ -11,7 +11,7 @@
 
   <subtitle>This Atom feed has a stylesheet that will make it look like the websub.rocks site. If you are seeing this message, your browser doesn't support XSLT. To add a new post to this feed, follow this link <?= Config::$base ?>subscriber/<?= $num ?>/<?= $token ?>/publish</subtitle>
 
-  <? foreach($posts as $i=>$post): ?>
+  <?php foreach($posts as $i=>$post): ?>
 
   <entry>
     <id><?= $self ?>#quote-<?= $i ?></id>
@@ -24,5 +24,5 @@
     </author>
   </entry>
 
-  <? endforeach ?>
+  <?php endforeach ?>
 </feed>
