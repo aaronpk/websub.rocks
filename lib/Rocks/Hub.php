@@ -137,7 +137,7 @@ class Hub {
     );
 
     $route = new \App\Subscriber();
-    $feed = $route->get_feed($request, $response, ['num'=>$num, 'token'=>$token]);
+    $feed = $route->get_feed($request, ['num'=>$num, 'token'=>$token]);
     $html = $feed->getBody();
 
     return (string)$html;
