@@ -1,4 +1,4 @@
-  <? foreach($posts as $i=>$post): ?>
+  <?php foreach($posts as $i=>$post): ?>
 
     <section class="content h-entry" id="quote-<?= $i ?>">
       <div class="e-content p-name"><?= $post['content'] ?></div>
@@ -10,4 +10,4 @@
       </a>
     </section>
     
-  <? endforeach ?>
+  <?php endforeach ?>
