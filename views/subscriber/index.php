@@ -56,12 +56,12 @@
       <tr>
         <td></td>
         <td><a href="/subscriber/203">203</a></td>
-        <td>Subscribing to a hub that sends a 302 temporary redirect</td>
+        <td>Subscribing to a hub that sends a 307 temporary redirect</td>
       </tr>
       <tr>
         <td></td>
         <td><a href="/subscriber/204">204</a></td>
-        <td>Subscribing to a hub that sends a 301 permanent redirect</td>
+        <td>Subscribing to a hub that sends a 308 permanent redirect</td>
       </tr>
       <tr>
         <td></td>
