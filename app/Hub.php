@@ -249,6 +249,7 @@ class Hub {
     ]);
 
     $response->getBody()->write($params['hub_challenge']);
+    $response = $response->withHeader('Content-Type', 'application/octet-stream');
     return $response;
   }
 
