@@ -12,10 +12,9 @@ class Config {
     'password' => 'websubrocks',
   ];
 
-  // When set to true, authentication is bypassed, and you can log in by 
-  // entering any email you want in the login form. This is useful when developing
-  // this or running it locally. Email login links have been removed, so this is
-  // currently the only way to sign in.
+  // When set to true, a development login form is shown that signs in as any
+  // email address entered, bypassing authentication. Use it for running locally
+  // where passkeys can't work, which is anywhere except https:// or http://localhost.
   public static $skipauth = false;
 
   // Used when an encryption key is needed. Set to a long random string.

@@ -86,6 +86,24 @@ final class Request
         return $this->post($name) ?? $this->query($name);
     }
 
+    /**
+     * The body decoded as a JSON object, or an empty array if it isn't one.
+     *
+     * @return array<string, mixed>
+     */
+    public function json(): array
+    {
+        $data = json_decode($this->body, true);
+
+        return is_array($data) ? $data : [];
+    }
+
+    /** Whether the body was sent as JSON, which a cross-site form can't do without a CORS preflight. */
+    public function isJson(): bool
+    {
+        return str_starts_with(strtolower((string) $this->header('content-type')), 'application/json');
+    }
+
     public function header(string $name): ?string
     {
         return $this->headers[strtolower($name)] ?? null;

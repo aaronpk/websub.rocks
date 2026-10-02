@@ -33,8 +33,17 @@ $router->get('/', [App\Controller::class, 'index']);
 $router->get('/implementation-reports', [App\Controller::class, 'implementation_reports']);
 
 $router->post('/auth/start', [App\Auth::class, 'start']);
-$router->get('/auth/code', [App\Auth::class, 'code']);
+$router->post('/auth/register/challenge', [App\Auth::class, 'register_challenge']);
+$router->post('/auth/register', [App\Auth::class, 'register']);
+$router->post('/auth/login/challenge', [App\Auth::class, 'login_challenge']);
+$router->post('/auth/login', [App\Auth::class, 'login']);
 $router->get('/auth/signout', [App\Auth::class, 'signout']);
+
+$router->get('/account', [App\Account::class, 'index']);
+$router->post('/account/passkeys/challenge', [App\Account::class, 'add_challenge']);
+$router->post('/account/passkeys', [App\Account::class, 'add']);
+$router->post('/account/passkeys/{id}/rename', [App\Account::class, 'rename']);
+$router->post('/account/passkeys/{id}/remove', [App\Account::class, 'remove']);
 
 $router->post('/cron/cleanup', [App\Controller::class, 'clean_logins']);
 

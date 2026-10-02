@@ -12,6 +12,12 @@ if(getenv('ENV')) {
 
 p3k\initdb();
 
+// Session cookies are only ever needed by this site's own pages
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_samesite', 'Lax');
+if(parse_url(Config::$base, PHP_URL_SCHEME) == 'https')
+  ini_set('session.cookie_secure', '1');
+
 function templates() {
   static $templates = null;
   if(!$templates)
@@ -55,12 +61,32 @@ function is_logged_in() {
   return isset($_SESSION) && array_key_exists('user_id', $_SESSION);
 }
 
-function login_required(&$response) {
-  return $response->withHeader('Location', '/?login_required')->withStatus(302);
-}
-
 function logged_in_user() {
   return ORM::for_table('users')->where('id', $_SESSION['user_id'])->find_one();
+}
+
+function log_in($user) {
+  if(session_status() != PHP_SESSION_ACTIVE)
+    p3k\session_setup(true);
+  // A new session id on login, so one planted before signing in is useless afterwards
+  session_regenerate_id(true);
+  $user->last_login = date('Y-m-d H:i:s');
+  $user->save();
+  $_SESSION['user_id'] = $user->id;
+  $_SESSION['email'] = $user->email;
+  $_SESSION['login'] = 'success';
+}
+
+// A per-session token that state-changing requests from logged-in pages must echo back
+function csrf_token() {
+  if(empty($_SESSION['csrf']))
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+  return $_SESSION['csrf'];
+}
+
+function csrf_valid($request) {
+  $sent = $request->header('X-CSRF-Token') ?? $request->post('csrf') ?? '';
+  return !empty($_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $sent);
 }
 
 function validate_url($url) {

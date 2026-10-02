@@ -9,7 +9,7 @@
   <?php if(p3k\flash('login')): ?>
     <div class="ui success message">
       <div class="header">Welcome!</div>
-      <p>You are logged in as <?= $_SESSION['email'] ?? 'unknown' ?>!</p>
+      <p>You are logged in as <?= e($_SESSION['email'] ?? 'unknown') ?>!</p>
     </div>
   <?php endif; ?>
 
@@ -17,15 +17,35 @@
     <section class="content">
       <h3>Sign in to begin</h3>
 
-      <form action="/auth/start" method="POST">
-        <div class="ui fluid action input">
-          <input type="email" name="email" placeholder="you@example.com">
-          <button class="ui button">Sign In</button>
-          <input type="hidden" name="galaxy" value="cheese">
-        </div>
-      </form>
+      <?php if($passkeys_available): ?>
+        <p>
+          <button class="ui primary button" id="passkey-signin">Sign in with a passkey</button>
+        </p>
 
-      <p>You will receive an email with a link to sign in.</p>
+        <p>New here? Create an account with a passkey.</p>
+        <form class="ui form" onsubmit="return false">
+          <div class="ui fluid action input">
+            <input type="email" id="passkey-email" placeholder="you@example.com" autocomplete="email webauthn">
+            <button type="submit" class="ui button" id="passkey-register">Create Account</button>
+          </div>
+        </form>
+
+        <div class="ui negative message hidden" id="passkey-status"></div>
+      <?php else: ?>
+        <p>Passkey sign-in needs this site to be served over https, or from localhost.</p>
+      <?php endif; ?>
+
+      <?php if($skipauth): ?>
+        <h4>Development Login</h4>
+        <form action="/auth/start" method="POST">
+          <div class="ui fluid action input">
+            <input type="email" name="email" placeholder="you@example.com">
+            <button class="ui button">Sign In</button>
+            <input type="hidden" name="galaxy" value="cheese">
+          </div>
+        </form>
+        <p>Authentication is bypassed on this server, so you can sign in as any email address.</p>
+      <?php endif; ?>
     </section>
   <?php endif; ?>
 

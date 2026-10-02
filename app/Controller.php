@@ -3,6 +3,7 @@ namespace App;
 
 use Rocks\Http\Request;
 use Rocks\Http\Response;
+use Rocks\Passkeys;
 use ORM;
 use Config;
 use p3k;
@@ -18,6 +19,8 @@ class Controller {
 
     return Response::make(200, page('index', [
       'title' => 'WebSub Rocks!',
+      'passkeys_available' => Passkeys::available(),
+      'skipauth' => Config::$skipauth,
     ]));
   }
 

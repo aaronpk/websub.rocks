@@ -7,7 +7,8 @@
     "indieweb/link-rel-parser": "0.1.*",
     "p3k/http": "0.1.*",
     "p3k/utils": "^1.2",
-    "p3k/websub": "dev-master"
+    "p3k/websub": "dev-master",
+    "lbuchs/webauthn": "^2.2"
   },
   "config": {
     "platform": {

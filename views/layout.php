@@ -12,6 +12,7 @@
   <script src="/assets/jquery-1.11.3.min.js"></script>
   <script src="/assets/semantic.min.js"></script>
   <script src="/assets/common.js"></script>
+  <script src="/assets/passkey.js"></script>
 
   <?= $link_tag ?>
 
@@ -26,7 +27,7 @@
   <a class="item" href="/hub">Hub</a>
   <?php if(is_logged_in()): ?>
     <div class="right menu">
-      <span class="item"><?= e(p3k\url\display_url($_SESSION['email'])) ?></span>
+      <a class="item" href="/account"><?= e(p3k\url\display_url($_SESSION['email'])) ?></a>
       <a class="item" href="/auth/signout">Sign Out</a>
     </div>
   <?php endif; ?>

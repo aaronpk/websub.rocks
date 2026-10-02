@@ -47,7 +47,8 @@ Copy the `lib/config.template.php` file to `lib/config.php` and fill it out. You
 * `$base` - the full base URL where you've installed websub.rocks, e.g. `http://websubrocks.example.com/`
 * `$redis` - configure the host and port to your Redis instance, e.g. `tcp://127.0.0.1:6379`
 * `$dbhost` and others - configure the name, host, username and password for your MySQL database
-* `$skipauth` - set to `true` to bypass authentication. Emailed login links have been removed, so for now this is the only way to sign in.
+* `$base` is also the passkey relying party: passkeys are bound to its hostname, so changing it later means everyone has to register new passkeys. Passkeys only work when `$base` is `https://`, or is `http://localhost`.
+* `$skipauth` - set to `true` to add a development login form that signs in as any email address, for running somewhere passkeys can't work
 * `$secret` - set to a long random string, used for signing tokens
 
 #### Install Redis
@@ -65,6 +66,8 @@ The database schema is in the `database/` folder, so you can set up the database
 ```
 mysql -u root websubrocks < database/schema.sql
 ```
+
+If you're upgrading an existing install, apply the numbered migrations in `database/` that you haven't run yet instead. `0003.sql` adds the tables for passkey login.
 
 #### Install Nginx
 

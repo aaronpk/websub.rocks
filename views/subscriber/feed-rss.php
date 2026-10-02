@@ -12,7 +12,7 @@
   <publishUrl><?= Config::$base ?>subscriber/<?= $num ?>/<?= $token ?>/publish</publishUrl>
   <lastBuildDate><?= date('r', strtotime($posts[count($posts)-1]['published'])) ?></lastBuildDate>
   <language>en-US</language>
-  <?= is_logged_in() ? '<author>'.p3k\url\display_url($_SESSION['email']).'</author>' : '' ?>
+  <?= is_logged_in() ? '<author>'.e(p3k\url\display_url($_SESSION['email'])).'</author>' : '' ?>
 
   <description>This RSS feed has a stylesheet that will make it look like the websub.rocks site. If you are seeing this message, your browser doesn't support XSLT. To add a new post to this feed, follow this link <?= Config::$base ?>subscriber/<?= $num ?>/<?= $token ?>/publish</description>
 
