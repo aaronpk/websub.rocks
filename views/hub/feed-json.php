@@ -1,4 +1,4 @@
-<?
+<?php
 $feed = [
   'title' => $title,
   'home_page_url' => Config::$base,

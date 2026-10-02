@@ -1,10 +1,9 @@
 <?php
 namespace App;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\ServerRequestInterface;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
 use ORM;
-use IndieAuth;
 use Config;
 use p3k;
 
@@ -14,24 +13,19 @@ class Controller {
     return Config::$base.'endpoints/callback';
   }
 
-  public function index(ServerRequestInterface $request) {
-    $response = new Response;
+  public function index(Request $request) {
     p3k\session_setup();
 
-    $response->getBody()->write(view('index', [
+    return Response::make(200, page('index', [
       'title' => 'WebSub Rocks!',
     ]));
-    return $response;
   }
 
-  public function implementation_reports(ServerRequestInterface $request) {
-    $response = new Response;
-    return $response->withHeader('Location', 'https://github.com/w3c/websub/tree/master/implementation-reports')->withStatus(302);
+  public function implementation_reports(Request $request) {
+    return Response::redirect('https://github.com/w3c/websub/tree/master/implementation-reports');
   }
 
-  public function clean_logins(ServerRequestInterface $request) {
-    $response = new Response;
-
+  public function clean_logins(Request $request) {
     // Delete users who never logged in older than 7 days ago
 
     $count = ORM::for_table('users')
@@ -44,8 +38,7 @@ class Controller {
       ->where_null('last_login')
       ->delete_many();
 
-    $response->getBody()->write('Deleted '.$count.' logins');
-    return $response->withHeader('Content-type', 'text/plain');
+    return Response::make(200, 'Deleted '.$count.' logins', ['Content-Type' => 'text/plain']);
   }
 
 }

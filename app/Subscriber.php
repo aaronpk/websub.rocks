@@ -1,9 +1,9 @@
 <?php
 namespace App;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\ServerRequestInterface;
-use Zend\Diactoros\Response\JsonResponse;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
+use Rocks\View\Raw;
 use ORM;
 use Config;
 use Rocks\Hub;
@@ -13,14 +13,12 @@ use p3k;
 
 class Subscriber {
 
-  public function index(ServerRequestInterface $request) {
-    $response = new Response;
+  public function index(Request $request) {
     p3k\session_setup();
 
-    $response->getBody()->write(view('subscriber/index', [
+    return Response::make(200, page('subscriber/index', [
       'title' => 'WebSub Rocks!',
     ]));
-    return $response;
   }
 
   public static function test_name($num) {
@@ -56,8 +54,7 @@ class Subscriber {
     }
   }
 
-  public function get_test(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function get_test(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
 
@@ -114,24 +111,23 @@ class Subscriber {
         throw new \Exception('This test is not configured');
     }
 
-    $response->getBody()->write(view('subscriber/test', [
+    return Response::make(200, page('subscriber/test', [
       'title' => 'WebSub Rocks!',
       'token' => $token,
       'topic' => $topic,
       'num' => $num,
       'name' => self::test_name($num),
-      'description' => $description
+      'description' => new Raw($description)
     ]));
-    return $response;
   }
 
-  public function head_feed(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function head_feed(Request $request, $args) {
+    $response = Response::make();
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
-    $query = $request->getQueryParams();
+    $query = $request->query;
 
     streaming_publish($token, [
       'type' => 'discover',
@@ -197,13 +193,13 @@ class Subscriber {
     return $response;
   }
 
-  public function get_feed(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function get_feed(Request $request, $args) {
+    $response = Response::make();
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
-    $query = $request->getQueryParams();
+    $query = $request->query;
 
     streaming_publish($token, [
       'type' => 'discover',
@@ -284,23 +280,33 @@ class Subscriber {
           ->withHeader('Link', '<'.$self.'>; rel="self"')
           ->withAddedHeader('Link', '<'.$hub.'>; rel="hub"');
         break;
+      default:
+        return $response->withStatus(404);
     }
 
-    $response->getBody()->write(view($view, [
+    $data = [
       'title' => 'WebSub Rocks!',
       'num' => $num,
       'name' => self::test_name($num),
       'token' => $token,
-      'posts' => $posts,
-      'link_tag' => $link_tag,
+      'posts' => raw_posts($posts),
+      'link_tag' => new Raw($link_tag),
       'hub' => $hub,
       'self' => $self
-    ]));
-    return $response;
+    ];
+
+    if($view == 'subscriber/feed-atom' || $view == 'subscriber/feed-rss') {
+      $html = view($view, $data);
+    } else {
+      $data['post_list'] = new Raw(view('subscriber/post-list', ['posts'=>$data['posts'], 'num'=>$num]));
+      $html = page($view, $data);
+    }
+
+    return $response->withBody($html);
   }
 
-  public function hub(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function hub(Request $request, $args) {
+    $response = Response::make();
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -312,8 +318,8 @@ class Subscriber {
       return self::hub_error($token, ['error' => 'not_found'], 404);
     }
 
-    $query = $request->getQueryParams();
-    $params = $request->getParsedBody();
+    $query = $request->query;
+    $params = $request->post;
 
     $mode = array_key_exists('hub_mode', $params) ? $params['hub_mode'] : false;
 
@@ -457,8 +463,7 @@ class Subscriber {
               'success_message' => 'Great! Your subscriber properly rejected the subscription request for an invalid topic URL'
             ]);
 
-            $response->getBody()->write('Your subscriber properly rejected the subscription request for an invalid topic URL.');
-            return $response;
+            return $response->withBody('Your subscriber properly rejected the subscription request for an invalid topic URL.');
           } else {
             return self::hub_error($token, [
               'error' => 'subscription_not_rejected',
@@ -514,8 +519,7 @@ class Subscriber {
     }
   }
 
-  public function publish(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function publish(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -523,7 +527,7 @@ class Subscriber {
     $posts = Feed::get_posts_in_feed($token);
 
     if(count($posts) == 0) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'not_found'
       ], 404);
     }
@@ -546,12 +550,11 @@ class Subscriber {
 
     $delivered = Hub::publish($num, $token, $send_secret);
 
-    if($request->getMethod() == 'GET') {
-      return $response->withHeader('Location', '/blog/'.$num.'/'.$token)->withStatus(302);
+    if($request->method == 'GET') {
+      return Response::redirect('/blog/'.$num.'/'.$token);
     } else {
       $posts = Feed::get_posts_in_feed($token);
-      $templates = new \League\Plates\Engine(dirname(__FILE__).'/../views');
-      $html = $templates->render('subscriber/post-list', ['posts'=>$posts, 'num'=>$num]);
+      $html = view('subscriber/post-list', ['posts'=>raw_posts($posts), 'num'=>$num]);
 
       $result = null;
       $message = null;
@@ -598,7 +601,7 @@ class Subscriber {
         }
       }
 
-      return new JsonResponse([
+      return Response::json([
         'post' => $data,
         'delivered' => $delivered,
         'html' => $html,
@@ -611,7 +614,7 @@ class Subscriber {
   private static function hub_error($token, $params, $code=400) {
     $params['type'] = 'error';
     streaming_publish($token, $params);
-    return new JsonResponse($params, $code);
+    return Response::json($params, $code);
   }
 
 }

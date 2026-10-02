@@ -13,7 +13,7 @@ Configuring websub.rocks to run locally can be a bit of a challenge, so here are
 
 ### Dependencies
 
-* PHP 5.6 or 5.7
+* PHP 8.2 or newer
 * MySQL 5.5 or newer
 * [Redis](https://redis.io)
 * [nginx](http://nginx.org)
@@ -47,9 +47,8 @@ Copy the `lib/config.template.php` file to `lib/config.php` and fill it out. You
 * `$base` - the full base URL where you've installed websub.rocks, e.g. `http://websubrocks.example.com/`
 * `$redis` - configure the host and port to your Redis instance, e.g. `tcp://127.0.0.1:6379`
 * `$dbhost` and others - configure the name, host, username and password for your MySQL database
-* `$skipauth` - set to `true` to bypass emailing login links
-* `$secret` - set to a random string, used for signing tokens
-* `$mailtun` - if you want websub.rocks to email login URLs, configure your Mailgun account info here
+* `$skipauth` - set to `true` to bypass authentication. Emailed login links have been removed, so for now this is the only way to sign in.
+* `$secret` - set to a long random string, used for signing tokens
 
 #### Install Redis
 

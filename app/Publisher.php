@@ -1,13 +1,12 @@
 <?php
 namespace App;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\ServerRequestInterface;
-use Zend\Diactoros\Response\JsonResponse;
-use Zend\Diactoros\Response\HtmlResponse;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
 use ORM, Config;
 use DOMXPath;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use p3k\HTTP;
 use p3k;
 
@@ -15,32 +14,25 @@ class Publisher {
 
   public $client;
 
-  public function index(ServerRequestInterface $request) {
-    $response = new Response;
+  public function index(Request $request) {
     p3k\session_setup();
 
-    $response->getBody()->write(view('publisher/index', [
+    return Response::make(200, page('publisher/index', [
       'title' => 'WebSub Rocks!',
     ]));
-    return $response;
   }
 
-  public function discover(ServerRequestInterface $request) {
-    $response = new Response;
+  public function discover(Request $request) {
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
     $this->client->set_timeout(10);
-    $params = $request->getParsedBody();
-    if(!$params) {
-      $params = $request->getQueryParams();
-    }
 
-    $topic_url = $params['topic'];
-    $topic = $this->client->get($params['topic']);
+    $topic_url = (string)$request->input('topic');
+    $topic = $this->client->get($topic_url);
 
     if($topic['error']) {
-      return new JsonResponse([
+      return Response::json([
         'error' => $topic['error'],
         'error_description' => $topic['error_description']
       ]);
@@ -127,7 +119,7 @@ class Publisher {
     }
 
     // Check for a .well-known file
-    $topic_base = parse_url($params['topic'], PHP_URL_SCHEME).'://'.parse_url($params['topic'], PHP_URL_HOST);
+    $topic_base = parse_url($topic_url, PHP_URL_SCHEME).'://'.parse_url($topic_url, PHP_URL_HOST);
     $hostmeta_response = $this->client->get($topic_base.'/.well-known/host-meta');
     if($hostmeta_response['code'] == 200) {
       if(isset($hostmeta_response['headers']['Content-Type']) && is_string($hostmeta_response['headers']['Content-Type'])) {
@@ -179,7 +171,7 @@ class Publisher {
     $jwt = JWT::encode([
       'hub' => $hub,
       'topic' => $self,
-    ], Config::$secret);
+    ], jwt_key(), 'HS256');
 
     // Log this in the database if there is a hub and self
     if($hub && $self) {
@@ -207,7 +199,7 @@ class Publisher {
     $debug = json_encode($data, JSON_PRETTY_PRINT);
     $debug = $data;
 
-    return new JsonResponse([
+    return Response::json([
       'hub' => $hub,
       'self' => $self,
       'jwt' => $jwt,
@@ -215,18 +207,20 @@ class Publisher {
     ]);
   }
 
-  public function subscribe(ServerRequestInterface $request) {
-    $response = new Response;
+  public function subscribe(Request $request) {
     p3k\session_setup();
 
     $this->client = new HTTP(Config::$useragent);
     $this->client->set_timeout(10);
-    $params = $request->getParsedBody();
 
-    $data = (array)JWT::decode($params['jwt'], Config::$secret, ['HS256']);
+    try {
+      $data = (array)JWT::decode((string)$request->post('jwt'), new Key(jwt_key(), 'HS256'));
+    } catch(\Exception $e) {
+      $data = false;
+    }
 
-    if(!$data) {
-      return new JsonResponse([
+    if(!$data || !is_array($data['hub'] ?? null) || !is_array($data['topic'] ?? null)) {
+      return Response::json([
         'error' => 'invalid_request'
       ], 400);
     }
@@ -235,9 +229,9 @@ class Publisher {
     $topic = $data['topic'][0];
 
     // Ensure the specified hub is in the JWT
-    $hub = $params['hub'];
-    if(!in_array($params['hub'], $data['hub'])) {
-      return new JsonResponse([
+    $hub = $request->post('hub');
+    if(!in_array($hub, $data['hub'])) {
+      return Response::json([
         'error' => 'invalid_request'
       ], 400);
     }
@@ -278,7 +272,7 @@ class Publisher {
 
     $debug = json_encode($data, JSON_PRETTY_PRINT);
 
-    return new JsonResponse([
+    return Response::json([
       'result' => $result,
       'token' => ($result == 'success' ? $subscription->token : false),
       'debug' => $subscription->subscription_response_body,
@@ -289,14 +283,13 @@ class Publisher {
   }
 
 
-  public function callback_verify(ServerRequestInterface $request) {
-    $response = new Response;
-    $params = $request->getQueryParams();
+  public function callback_verify(Request $request) {
+    $params = $request->query;
 
     if(!array_key_exists('hub_topic', $params)
       || !array_key_exists('hub_challenge', $params)
       || !array_key_exists('hub_lease_seconds', $params)) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'bad_request',
         'error_description' => 'Missing parameters'
       ], 400);
@@ -309,7 +302,7 @@ class Publisher {
       ->find_one();
 
     if(!$subscription) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'not_found',
         'error_description' => 'There is no pending subscription for the provided topic'
       ], 404);
@@ -318,22 +311,21 @@ class Publisher {
     $subscription->pending = 0;
     $subscription->date_subscription_confirmed = date('Y-m-d H:i:s');
     $subscription->lease_seconds = $params['hub_lease_seconds'];
-    $subscription->date_expires = date('Y-m-d H:i:s', time()+$params['hub_lease_seconds']);
+    $subscription->date_expires = date('Y-m-d H:i:s', time()+(int)$params['hub_lease_seconds']);
     $subscription->save();
 
     streaming_publish($subscription->token, [
       'type' => 'active'
     ]);
 
-    return new HtmlResponse($params['hub_challenge'], 200, ['Content-Type'=>['text/plain']]);
+    return Response::make(200, (string)$params['hub_challenge'], ['Content-Type' => 'text/plain']);
   }
 
-  public function subscription_status(ServerRequestInterface $request) {
-    $response = new Response;
-    $query = $request->getQueryParams();
+  public function subscription_status(Request $request) {
+    $query = $request->query;
 
     if(!array_key_exists('token', $query)) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'bad_request',
       ], 400);
     }
@@ -343,25 +335,24 @@ class Publisher {
       ->find_one();
 
     if(!$subscription) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'not_found',
         'error_description' => 'Subscription not found'
       ], 404);
     }
 
-    return new JsonResponse([
+    return Response::json([
       'active' => $subscription->pending == 0 ? true : false
     ]);
   }
 
 
-  public function callback_deliver(ServerRequestInterface $request) {
-    $response = new Response;
-    $query = $request->getQueryParams();
-    $body = $request->getBody();
+  public function callback_deliver(Request $request) {
+    $query = $request->query;
+    $body = $request->body;
 
     if(!array_key_exists('token', $query)) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'bad_request',
         'error_description' => 'Invalid callback URL'
       ], 400);
@@ -372,7 +363,7 @@ class Publisher {
       ->find_one();
 
     if(!$subscription) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'not_found',
         'error_description' => 'Subscription not found'
       ], 404);
@@ -380,15 +371,15 @@ class Publisher {
 
     streaming_publish($subscription->token, [
       'type' => 'notification',
-      'body' => (string)$body
+      'body' => $body
     ]);
 
     $subscription->date_last_notification = date('Y-m-d H:i:s');
-    $subscription->notification_content_type = $request->getHeaderLine('Content-Type');
-    $subscription->notification_content = (string)$body;
+    $subscription->notification_content_type = $request->header('Content-Type') ?? '';
+    $subscription->notification_content = $body;
     $subscription->save();
 
-    return new JsonResponse([
+    return Response::json([
       'result' => 'ok'
     ]);
   }

@@ -1,75 +1,66 @@
 <?php
 namespace App;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\ServerRequestInterface;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
 use ORM;
 use Config;
-use Mailgun\Mailgun;
 use p3k;
 
 class Auth {
 
-  public function start(ServerRequestInterface $request) {
-    $response = new Response;
-    $params = $request->getParsedBody();
-
-    if($params['galaxy'] != 'vegancheese') {
-      return $response->withHeader('Location', '/')->withStatus(302);
+  public function start(Request $request) {
+    if($request->post('galaxy') != 'vegancheese') {
+      return Response::redirect('/');
     }
 
-    $user = ORM::for_table('users')->where('email', $params['email'])->find_one();
+    // Emailed login links have been removed. Until passkey login is added,
+    // signing in only works on installs with authentication bypassed.
+    if(!Config::$skipauth) {
+      return Response::make(200, page('auth-error', [
+        'title' => 'Error - WebSub Rocks!',
+        'error' => 'Login Unavailable',
+        'error_description' => 'Email login is currently disabled.',
+      ]));
+    }
+
+    $email = $request->post('email');
+    if(!$email) {
+      return Response::redirect('/');
+    }
+
+    $user = ORM::for_table('users')->where('email', $email)->find_one();
 
     if(!$user) {
       $user = ORM::for_table('users')->create();
-      $user->email = $params['email'];
+      $user->email = $email;
     }
 
     $user->auth_code = $code = p3k\random_string(64);
     $user->auth_code_exp = date('Y-m-d H:i:s', time()+60*30);
     $user->save();
 
-    $login_url = Config::$base . 'auth/code?code=' . $code;
-
-    if(Config::$skipauth) {
-      return $response->withHeader('Location', $login_url)->withStatus(302);
-    }
-
-    // Email the login URL to the user
-    $mg = new Mailgun(Config::$mailgun['key']);
-    $mg->sendMessage(Config::$mailgun['domain'], [
-      'from'     => Config::$mailgun['from'],
-      'to'       => $user->email,
-      'subject'  => 'Your websub.rocks Login URL',
-      'text'     => "Click on the link below to sign in to websub.rocks\n\n$login_url\n"
-    ]);
-
-    $response->getBody()->write(view('auth-email', [
-      'title' => 'Sign In - WebSub Rocks!',
-    ]));
-    return $response;
+    return Response::redirect(Config::$base . 'auth/code?code=' . $code);
   }
 
-  public function code(ServerRequestInterface $request) {
-    $response = new Response;
-    $params = $request->getQueryParams();
+  public function code(Request $request) {
+    $code = $request->query('code');
 
-    if(!array_key_exists('code', $params)) {
-      return $response->withHeader('Location', '/')->withStatus(302);
+    if($code === null) {
+      return Response::redirect('/');
     }
 
     $user = ORM::for_table('users')
-      ->where('auth_code', $params['code'])
+      ->where('auth_code', $code)
       ->where_gt('auth_code_exp', date('Y-m-d H:i:s'))
       ->find_one();
 
     if(!$user) {
-      $response->getBody()->write(view('auth-error', [
+      return Response::make(200, page('auth-error', [
         'title' => 'Error - WebSub Rocks!',
         'error' => 'Invalid Link',
         'error_description' => 'The link you followed is invalid or has expired. Please try again.',
       ]));
-      return $response;
     }
 
     $user->auth_code = '';
@@ -81,17 +72,16 @@ class Auth {
     $_SESSION['user_id'] = $user->id;
     $_SESSION['email'] = $user->email;
     $_SESSION['login'] = 'success';
-    return $response->withHeader('Location', '/')->withStatus(302);
+    return Response::redirect('/');
   }
 
-  public function signout(ServerRequestInterface $request) {
-    $response = new Response;
+  public function signout(Request $request) {
     p3k\session_setup(true);
     unset($_SESSION['user_id']);
     unset($_SESSION['email']);
     $_SESSION = [];
     session_destroy();
-    return $response->withHeader('Location', '/')->withStatus(302);
+    return Response::redirect('/');
   }
 
 }

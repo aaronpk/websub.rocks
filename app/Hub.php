@@ -1,9 +1,9 @@
 <?php
 namespace App;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\ServerRequestInterface;
-use Zend\Diactoros\Response\JsonResponse;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
+use Rocks\View\Raw;
 use ORM;
 use Config;
 use Rocks\Feed;
@@ -13,18 +13,15 @@ use IndieWeb;
 
 class Hub {
 
-  public function index(ServerRequestInterface $request) {
-    $response = new Response;
+  public function index(Request $request) {
     p3k\session_setup();
 
-    $response->getBody()->write(view('hub/index', [
+    return Response::make(200, page('hub/index', [
       'title' => 'WebSub Rocks!',
     ]));
-    return $response;
   }
 
-  public function get_test(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function get_test(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
 
@@ -58,27 +55,23 @@ class Hub {
         $description = 'This test will check whether your hub can handle delivering content that is not HTML or XML. The content at the topic URL of this test is JSON.';
         break;
       default:
-        $response = $response->withStatus(404);
-        return $response;
-        break;
+        return Response::make(404);
     }
 
-    $response->getBody()->write(view('hub/test', [
+    return Response::make(200, page('hub/test', [
       'title' => 'WebSub Rocks!',
       'num' => $num,
       'name' => $name,
-      'description' => $description
+      'description' => new Raw($description)
     ]));
-    return $response;
   }
 
   // Start a new test
-  public function post_start(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function post_start(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
 
-    $params = $request->getParsedBody();
+    $params = $request->post;
 
     // Generate a new token for this test
     $token = p3k\random_string(20);
@@ -90,13 +83,13 @@ class Hub {
     if(isset($params['topic'])) {
       $endpoints = $client->discover($params['topic']);
       if(!$endpoints['hub']) {
-        return new JsonResponse([
+        return Response::json([
           'error' => 'missing_hub',
           'error_description' => 'We did not find a rel=hub advertised at the topic provided.'
         ]);
       }
       if(!$endpoints['self']) {
-        return new JsonResponse([
+        return Response::json([
           'error' => 'missing_self',
           'error_description' => 'We did not find a rel=self advertised at the topic provided.'
         ]);
@@ -116,7 +109,7 @@ class Hub {
       Feed::set_up_posts_in_feed($token);
 
     } else {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'bad_request'
       ], 400);
     }
@@ -139,23 +132,21 @@ class Hub {
 
     $hub->save();
 
-    return new JsonResponse([
+    return Response::json([
       'token' => $token,
     ]);
   }
 
   // Start the subscription request, triggered automatically after the user presses start
-  public function post_subscribe(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function post_subscribe(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
 
-    $params = $request->getParsedBody();
-    $token = $params['token'];
+    $token = (string)$request->post('token');
 
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
     if(!$hub) {
-      return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
+      return Response::json(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
     }
     $hub_url = $hub->url;
     $topic_url = $hub->topic;
@@ -166,7 +157,7 @@ class Hub {
     $callback = Config::$base.'hub/'.$num.'/sub/'.$token;
 
     $subscription_params = [
-      'hub.mode' => ($params['action'] == 'unsubscribe' ? 'unsubscribe' : 'subscribe'),
+      'hub.mode' => ($request->post('action') == 'unsubscribe' ? 'unsubscribe' : 'subscribe'),
       'hub.topic' => $topic_url,
       'hub.callback' => $callback,
     ];
@@ -192,7 +183,7 @@ class Hub {
       $status = 'error';
     }
 
-    return new JsonResponse([
+    return Response::json([
       'result' => $result,
       'status' => $status,
       'token' => $token,
@@ -202,8 +193,7 @@ class Hub {
   }
 
   // The hub sends the verification challenge here
-  public function get_subscriber(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function get_subscriber(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -211,10 +201,10 @@ class Hub {
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
 
     if(!$hub) {
-      return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
+      return Response::json(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
     }
 
-    $params = $request->getQueryParams();
+    $params = $request->query;
 
     // Verify the hub sent the correct challenge
 
@@ -248,9 +238,7 @@ class Hub {
       'description' => 'The hub sent the verification request'
     ]);
 
-    $response->getBody()->write($params['hub_challenge']);
-    $response = $response->withHeader('Content-Type', 'application/octet-stream');
-    return $response;
+    return Response::make(200, (string)$params['hub_challenge'], ['Content-Type' => 'application/octet-stream']);
   }
 
   private static function verify_error($token, $description) {
@@ -258,13 +246,12 @@ class Hub {
       'type' => 'verify_error',
       'description' => $description
     ]);
-    return new JsonResponse(['error'=>'bad_request','error_description'=>$description], 404);
+    return Response::json(['error'=>'bad_request','error_description'=>$description], 404);
   }
 
 
   // The hub gets the content of the topic here
-  public function get_publisher(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function get_publisher(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -272,60 +259,56 @@ class Hub {
     $posts = Feed::get_posts_in_feed($token);
 
     if(!$posts) {
-      return new JsonResponse(['error'=>'no_posts'], 404);
+      return Response::json(['error'=>'no_posts'], 404);
     }
 
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
 
     if(!$hub) {
-      return new JsonResponse(['error'=>'not_found'], 404);
+      return Response::json(['error'=>'not_found'], 404);
     }
 
     $self_url = Config::$base.'hub/'.$num.'/pub/'.$token;
     $hub_url = $hub->url;
 
 
-    $response = $response
+    $response = Response::make()
       ->withHeader('Link', '<'.$self_url.'>; rel="self"')
       ->withAddedHeader('Link', '<'.$hub_url.'>; rel="hub"');
 
     switch($num) {
       case 105:
         // Plaintext body
-        $response = $response->withHeader('Content-Type', 'text/plain');
-        $response->getBody()->write(view('hub/feed-txt', [
-          'title' => 'WebSub Rocks! Test '.$num,
-          'num' => $num,
-          'token' => $token,
-          'posts' => $posts,
-        ]));
-        break;
+        return $response->withHeader('Content-Type', 'text/plain')
+          ->withBody(view('hub/feed-txt', [
+            'title' => 'WebSub Rocks! Test '.$num,
+            'num' => $num,
+            'token' => $token,
+            'posts' => raw_posts($posts),
+          ]));
       case 106:
         // JSON body
-        $response = $response->withHeader('Content-Type', 'application/json');
-        $response->getBody()->write(view('hub/feed-json', [
-          'title' => 'WebSub Rocks! Test '.$num,
-          'num' => $num,
-          'token' => $token,
-          'posts' => $posts,
-          'self' => $self_url
-        ]));
-        break;
+        return $response->withHeader('Content-Type', 'application/json')
+          ->withBody(view('hub/feed-json', [
+            'title' => 'WebSub Rocks! Test '.$num,
+            'num' => $num,
+            'token' => $token,
+            'posts' => raw_posts($posts),
+            'self' => $self_url
+          ]));
       default:
-        $response->getBody()->write(view('hub/feed', [
+        return $response->withBody(page('hub/feed', [
           'title' => 'WebSub Rocks! Test '.$num,
           'num' => $num,
           'token' => $token,
-          'posts' => $posts,
+          'post_list' => new Raw(view('subscriber/post-list', ['posts'=>raw_posts($posts), 'num'=>$num])),
           'link_tag' => '',
         ]));
     }
-    return $response;
   }
 
   // For public hubs, the user will trigger a new post be added here
-  public function post_publisher(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function post_publisher(Request $request, $args) {
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -333,7 +316,7 @@ class Hub {
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
 
     if(!$hub) {
-      return new JsonResponse(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
+      return Response::json(['error'=>'not_found','error_description'=>'No hub was found for this token'], 404);
     }
 
     $posts = Feed::get_posts_in_feed($token);
@@ -352,14 +335,14 @@ class Hub {
       'hub.topic' => $hub->topic,
     ]));
 
-    return new JsonResponse([
+    return Response::json([
       'result' => 'published'
     ]);
   }
 
   // a WebSub delivery notification
-  public function post_subscriber(ServerRequestInterface $request, $args) {
-    $response = new Response;
+  public function post_subscriber(Request $request, $args) {
+    $response = Response::make();
     p3k\session_setup();
     $num = $args['num'];
     $token = $args['token'];
@@ -367,7 +350,7 @@ class Hub {
     $hub = ORM::for_table('hubs')->where('token', $token)->find_one();
 
     if(!$hub) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'not_found',
         'error_description' => 'No hub was found for this token'
       ], 404);
@@ -375,7 +358,7 @@ class Hub {
 
     // Expire subscribers after 15 minutes
     if(strtotime($hub->date_created) < (time()-(60*15))) {
-      return new JsonResponse([
+      return Response::json([
         'error' => 'expired',
         'error_description' => 'This subscriber is only active for 15 minutes. You\'ll need to start a new test to continue.'
       ], 404);
@@ -387,7 +370,7 @@ class Hub {
     $topic = $http->get($hub->topic);
 
     // Check for notification payload
-    $notification_body = $request->getBody()->__toString();
+    $notification_body = $request->body;
 
     if(trim($notification_body) == '') {
       streaming_publish($token, [
@@ -419,10 +402,10 @@ class Hub {
     }
 
     $content_type_debug = 'Topic Content-Type: '.$topic['headers']['Content-Type']."\n"
-      . "Content-Type sent:  ".$request->getHeaderLine('Content-type')."\n";
+      . "Content-Type sent:  ".$request->header('Content-Type')."\n";
 
     // Make sure they sent a content type header that matches the source
-    if($request->getHeaderLine('Content-Type') != $topic['headers']['Content-Type']) {
+    if($request->header('Content-Type') != $topic['headers']['Content-Type']) {
       streaming_publish($token, [
         'type' => 'notification',
         'error' => 'content_type_mismatch',
@@ -433,7 +416,7 @@ class Hub {
     }
 
     // The notification MUST contain a rel=self and rel=hub header
-    $link_header = 'Link: '.$request->getHeaderLine('Link'); // this function combines multiple Link headers into one
+    $link_header = 'Link: '.$request->header('Link'); // multiple Link headers arrive combined into one
     $parsed_link_headers = IndieWeb\http_rels($link_header);
     if(!isset($parsed_link_headers['hub'])) {
       streaming_publish($token, [
@@ -472,7 +455,7 @@ class Hub {
 
 
     // Check for presence of or absence of signature
-    $sent_signature = $request->getHeaderLine('X-Hub-Signature');
+    $sent_signature = $request->header('X-Hub-Signature');
     $signature_debug = '';
 
     if($hub->secret == '') {

@@ -1,76 +1,86 @@
 <?php
+
+declare(strict_types=1);
+
+use Rocks\Router;
+use Rocks\Http\HttpException;
+use Rocks\Http\Request;
+use Rocks\Http\Response;
+
+// When running under `php -S` with this file as the router script, let the
+// built-in server handle real files (CSS, JS, images) itself.
+if (PHP_SAPI === 'cli-server') {
+  $file = __DIR__ . '/' . ltrim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH), '/');
+  if ($file !== __DIR__ . '/' && is_file($file)) {
+    return false;
+  }
+}
+
 chdir('..');
-include('vendor/autoload.php');
 
-use Psr\Http\Message\ServerRequestInterface;
+if (!is_file('vendor/autoload.php')) {
+  http_response_code(500);
+  header('Content-Type: text/plain; charset=utf-8');
+  echo "Dependencies are not installed. Run:\n\n    composer install\n";
+  exit(1);
+}
 
-$container = new League\Container\Container;
-$container->share('response', Zend\Diactoros\Response::class);
-$container->share('request', function () {
-  return Laminas\Diactoros\ServerRequestFactory::fromGlobals(
-    $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES
-  );
-});
+require 'vendor/autoload.php';
 
-$route = new League\Route\Router;
+$router = new Router;
 
-$route->map('GET', '/', 'App\\Controller::index');
-$route->map('GET', '/implementation-reports', 'App\\Controller::implementation_reports');
+$router->get('/', [App\Controller::class, 'index']);
+$router->get('/implementation-reports', [App\Controller::class, 'implementation_reports']);
 
-$route->map('POST', '/auth/start', 'App\\Auth::start');
-$route->map('GET', '/auth/code', 'App\\Auth::code');
-$route->map('GET', '/auth/signout', 'App\\Auth::signout');
+$router->post('/auth/start', [App\Auth::class, 'start']);
+$router->get('/auth/code', [App\Auth::class, 'code']);
+$router->get('/auth/signout', [App\Auth::class, 'signout']);
 
-$route->map('GET', '/dashboard', 'App\\Controller::dashboard');
+$router->post('/cron/cleanup', [App\Controller::class, 'clean_logins']);
 
-$route->map('POST', '/cron/cleanup', 'App\\Controller::clean_logins');
+$router->get('/publisher', [App\Publisher::class, 'index']);
+$router->post('/publisher/discover', [App\Publisher::class, 'discover']);
+$router->post('/publisher/subscribe', [App\Publisher::class, 'subscribe']);
 
-$route->map('GET', '/publisher', 'App\\Publisher::index');
-$route->map('POST', '/publisher/discover', 'App\\Publisher::discover');
-$route->map('POST', '/publisher/subscribe', 'App\\Publisher::subscribe');
+$router->get('/publisher/status', [App\Publisher::class, 'subscription_status']);
+$router->get('/publisher/callback', [App\Publisher::class, 'callback_verify']);
+$router->post('/publisher/callback', [App\Publisher::class, 'callback_deliver']);
 
-$route->map('GET', '/publisher/status', 'App\\Publisher::subscription_status');
-$route->map('GET', '/publisher/callback', 'App\\Publisher::callback_verify');
-$route->map('POST', '/publisher/callback', 'App\\Publisher::callback_deliver');
+$router->get('/subscriber', [App\Subscriber::class, 'index']);
+$router->any('/subscriber/{num}/{token}/publish', [App\Subscriber::class, 'publish']);
+$router->post('/blog/{num}/{token}/hub', [App\Subscriber::class, 'hub']);
+// HEAD must be registered before GET, since get() also matches HEAD
+$router->add(['HEAD'], '/blog/{num}/{token}', [App\Subscriber::class, 'head_feed']);
+$router->get('/blog/{num}/{token}', [App\Subscriber::class, 'get_feed']);
+$router->get('/subscriber/{num}', [App\Subscriber::class, 'get_test']);
 
-$route->map('GET', '/subscriber', 'App\\Subscriber::index');
-$route->map('GET', '/subscriber/{num}/{token}/publish', 'App\\Subscriber::publish');
-$route->map('POST', '/subscriber/{num}/{token}/publish', 'App\\Subscriber::publish');
-$route->map('POST', '/blog/{num}/{token}/hub', 'App\\Subscriber::hub');
-$route->map('HEAD', '/blog/{num}/{token}', 'App\\Subscriber::head_feed');
-$route->map('GET', '/blog/{num}/{token}', 'App\\Subscriber::get_feed');
-$route->map('GET', '/subscriber/{num}', 'App\\Subscriber::get_test');
+$router->get('/hub', [App\Hub::class, 'index']);
+$router->get('/hub/{num}', [App\Hub::class, 'get_test']);
 
-$route->map('GET', '/hub', 'App\\Hub::index');
-$route->map('GET', '/hub/{num}', 'App\\Hub::get_test');
-
-$route->map('POST', '/hub/{num}/start', 'App\\Hub::post_start');
-$route->map('POST', '/hub/{num}/subscribe', 'App\\Hub::post_subscribe');
+$router->post('/hub/{num}/start', [App\Hub::class, 'post_start']);
+$router->post('/hub/{num}/subscribe', [App\Hub::class, 'post_subscribe']);
 
 // The user's hub will communicate with these two
-$route->map('GET', '/hub/{num}/sub/{token}', 'App\\Hub::get_subscriber');
-$route->map('POST', '/hub/{num}/sub/{token}', 'App\\Hub::post_subscriber');
+$router->get('/hub/{num}/sub/{token}', [App\Hub::class, 'get_subscriber']);
+$router->post('/hub/{num}/sub/{token}', [App\Hub::class, 'post_subscriber']);
 
-// For local topics, the user's hub will fetch the contents here
-$route->map('HEAD', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
-$route->map('GET', '/hub/{num}/pub/{token}', 'App\\Hub::get_publisher');
+// For local topics, the user's hub will fetch the contents here (GET and HEAD)
+$router->get('/hub/{num}/pub/{token}', [App\Hub::class, 'get_publisher']);
 
 // The user triggers adding a new post with this route
-$route->map('POST', '/hub/{num}/pub/{token}', 'App\\Hub::post_publisher');
+$router->post('/hub/{num}/pub/{token}', [App\Hub::class, 'post_publisher']);
 
-$route->map('GET', '/image', 'ImageProxy::image');
-
-$templates = new League\Plates\Engine(dirname(__FILE__).'/../views');
+$request = Request::fromGlobals();
 
 try {
-  $response = $route->dispatch($container->get('request'));
-  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response);
-} catch(League\Route\Http\Exception\NotFoundException $e) {
-  $response = $container->get('response');
-  $response->getBody()->write("Not Found\n");
-  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response->withStatus(404));
-} catch(League\Route\Http\Exception\MethodNotAllowedException $e) {
-  $response = $container->get('response');
-  $response->getBody()->write("Method not allowed\n");
-  (new Laminas\HttpHandlerRunner\Emitter\SapiEmitter)->emit($response->withStatus(405));
+  $match = $router->match($request->method, $request->path);
+  [$class, $method] = $match->handler;
+  $response = (new $class)->$method($request, $match->params);
+} catch (HttpException $e) {
+  $response = Response::text($e->getMessage() . "\n", $e->status);
+  foreach ($e->headers as $name => $value) {
+    $response = $response->withHeader($name, $value);
+  }
 }
+
+$response->send();

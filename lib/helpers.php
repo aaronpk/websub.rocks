@@ -1,4 +1,7 @@
 <?php
+use Rocks\View\Raw;
+use Rocks\View\Template;
+
 date_default_timezone_set('UTC');
 
 if(getenv('ENV')) {
@@ -9,13 +12,43 @@ if(getenv('ENV')) {
 
 p3k\initdb();
 
+function templates() {
+  static $templates = null;
+  if(!$templates)
+    $templates = new Template(dirname(__FILE__).'/../views');
+  return $templates;
+}
+
+// Renders a template on its own, for feeds and partials
 function view($template, $data=[]) {
-  global $templates;
-  return $templates->render($template, $data);
+  return templates()->render($template, $data);
+}
+
+// Renders a page template inside the shared layout
+function page($template, $data=[]) {
+  return templates()->render('layout', [
+    'title' => $data['title'] ?? 'WebSub Rocks!',
+    'link_tag' => new Raw((string)($data['link_tag'] ?? '')),
+    'content' => new Raw(view($template, $data)),
+  ]);
+}
+
+// Quotes are stored with HTML entities already encoded, so they must not be escaped again
+function raw_posts($posts) {
+  return array_map(function($post){
+    $post['content'] = new Raw((string)$post['content']);
+    $post['author'] = new Raw((string)$post['author']);
+    return $post;
+  }, $posts);
+}
+
+// php-jwt requires HMAC keys of at least 256 bits, so derive one from the configured secret
+function jwt_key() {
+  return hash('sha256', Config::$secret, true);
 }
 
 function e($text) {
-  return htmlspecialchars($text);
+  return htmlspecialchars((string)$text);
 }
 
 function is_logged_in() {

@@ -4,6 +4,7 @@ namespace Rocks;
 use ORM;
 use Config;
 use p3k\HTTP;
+use Rocks\Http\Request;
 use p3k;
 
 class Hub {
@@ -120,27 +121,28 @@ class Hub {
   }
 
   private static function render_page($num, $token) {
-    $response = new \Zend\Diactoros\Response();
+    $query = [];
 
     switch($num) {
       case 200:
-        $_GET['self'] = 'other';
+        $query['self'] = 'other';
         break;
       case 201:
       case 202:
-        $_GET['redirect'] = 'complete';
+        $query['redirect'] = 'complete';
         break;
     }
 
-    $request = \Zend\Diactoros\ServerRequestFactory::fromGlobals(
-      $_SERVER, $_GET, $_POST, $_COOKIE, $_FILES
+    $request = new Request(
+      method: 'GET',
+      path: '/blog/'.$num.'/'.$token,
+      query: $query,
     );
 
     $route = new \App\Subscriber();
     $feed = $route->get_feed($request, ['num'=>$num, 'token'=>$token]);
-    $html = $feed->getBody();
 
-    return (string)$html;
+    return $feed->body;
   }
 
 }
