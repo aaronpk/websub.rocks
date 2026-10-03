@@ -3,7 +3,6 @@ namespace Rocks;
 
 use ORM;
 use Config;
-use p3k\HTTP;
 use Rocks\Http\Request;
 use p3k;
 
@@ -63,7 +62,7 @@ class Hub {
   }
 
   public static function verify($num, $token, $mode, $callback, $challenge) {
-    $client = new HTTP(Config::$useragent);
+    $client = http_client();
     // build new callback URL with additional query params
     $topic = Config::$base . 'blog/' . $num . '/' . $token;
 
@@ -116,7 +115,7 @@ class Hub {
       $headers[] = 'X-Hub-Signature: sha256='.$sig;
     }
 
-    $client = new HTTP(Config::$useragent);
+    $client = http_client();
     return $client->post($callback, $content, $headers);
   }
 

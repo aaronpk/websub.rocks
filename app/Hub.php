@@ -76,7 +76,7 @@ class Hub {
     // Generate a new token for this test
     $token = p3k\random_string(20);
 
-    $http = new p3k\HTTP(Config::$useragent);
+    $http = http_client();
     $client = new p3k\WebSub\Client($http);
 
     // If they provided a topic URL, then we first need to discover the hub
@@ -151,7 +151,7 @@ class Hub {
     $hub_url = $hub->url;
     $topic_url = $hub->topic;
 
-    $http = new p3k\HTTP(Config::$useragent);
+    $http = http_client();
 
     // Start the subscription process at the hub
     $callback = Config::$base.'hub/'.$num.'/sub/'.$token;
@@ -329,7 +329,7 @@ class Hub {
     $data = Feed::add_post_to_feed($token, $post);
 
     // Notify the hub of new content
-    $http = new p3k\HTTP(Config::$useragent);
+    $http = http_client();
     $http->post($hub->url, http_build_query([
       'hub.mode' => 'publish',
       'hub.topic' => $hub->topic,
@@ -364,7 +364,7 @@ class Hub {
       ], 404);
     }
 
-    $http = new p3k\HTTP(Config::$useragent);
+    $http = http_client();
 
     // Fetch the topic URL so we know what the notification should look like
     $topic = $http->get($hub->topic);

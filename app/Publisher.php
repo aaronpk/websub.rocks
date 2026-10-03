@@ -7,7 +7,6 @@ use ORM, Config;
 use DOMXPath;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use p3k\HTTP;
 use p3k;
 
 class Publisher {
@@ -25,8 +24,7 @@ class Publisher {
   public function discover(Request $request) {
     p3k\session_setup();
 
-    $this->client = new HTTP(Config::$useragent);
-    $this->client->set_timeout(10);
+    $this->client = http_client(10);
 
     $topic_url = (string)$request->input('topic');
     $topic = $this->client->get($topic_url);
@@ -210,8 +208,7 @@ class Publisher {
   public function subscribe(Request $request) {
     p3k\session_setup();
 
-    $this->client = new HTTP(Config::$useragent);
-    $this->client->set_timeout(10);
+    $this->client = http_client(10);
 
     try {
       $data = (array)JWT::decode((string)$request->post('jwt'), new Key(jwt_key(), 'HS256'));

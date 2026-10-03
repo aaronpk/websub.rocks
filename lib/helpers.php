@@ -89,6 +89,17 @@ function csrf_valid($request) {
   return !empty($_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $sent);
 }
 
+// HTTP client for fetching URLs that users give us. Safe mode refuses
+// private, loopback and other non-public addresses, including on every
+// redirect hop, except for hosts listed in Config::$http_allow.
+function http_client($timeout=null) {
+  $http = new p3k\HTTP(Config::$useragent);
+  $http->set_safe_mode(true, Config::$http_allow ?? []);
+  if($timeout)
+    $http->set_timeout($timeout);
+  return $http;
+}
+
 function validate_url($url) {
   $url = parse_url($url);
 

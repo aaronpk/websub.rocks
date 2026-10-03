@@ -48,6 +48,7 @@ Copy the `lib/config.template.php` file to `lib/config.php` and fill it out. You
 * `$redis` - configure the host and port to your Redis instance, e.g. `tcp://127.0.0.1:6379`
 * `$dbhost` and others - configure the name, host, username and password for your MySQL database
 * `$base` is also the passkey relying party: passkeys are bound to its hostname, so changing it later means everyone has to register new passkeys. Passkeys only work when `$base` is `https://`, or is `http://localhost`.
+* `$http_allow` - websub.rocks refuses to fetch URLs that resolve to private or loopback addresses. When running it locally, add your own hostname (e.g. `localhost`) and any local services you want to test, as hostnames, IPs or CIDR ranges
 * `$skipauth` - set to `true` to add a development login form that signs in as any email address, for running somewhere passkeys can't work
 * `$secret` - set to a long random string, used for signing tokens
 
