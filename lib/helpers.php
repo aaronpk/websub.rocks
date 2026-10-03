@@ -65,9 +65,15 @@ function logged_in_user() {
   return ORM::for_table('users')->where('id', $_SESSION['user_id'])->find_one();
 }
 
-function log_in($user) {
+// p3k\session_setup() warns if a session is already active, which happens
+// when one controller renders another's output in the same request
+function session_setup($create=false) {
   if(session_status() != PHP_SESSION_ACTIVE)
-    p3k\session_setup(true);
+    p3k\session_setup($create);
+}
+
+function log_in($user) {
+  session_setup(true);
   // A new session id on login, so one planted before signing in is useless afterwards
   session_regenerate_id(true);
   $user->last_login = date('Y-m-d H:i:s');

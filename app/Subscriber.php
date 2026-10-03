@@ -14,7 +14,7 @@ use p3k;
 class Subscriber {
 
   public function index(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     return Response::make(200, page('subscriber/index', [
       'title' => 'WebSub Rocks!',
@@ -55,7 +55,7 @@ class Subscriber {
   }
 
   public function get_test(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
 
     $token = p3k\random_string(20);
@@ -111,6 +111,9 @@ class Subscriber {
         throw new \Exception('This test is not configured');
     }
 
+    if(is_logged_in())
+      Feed::set_owner($token, $_SESSION['user_id']);
+
     return Response::make(200, page('subscriber/test', [
       'title' => 'WebSub Rocks!',
       'token' => $token,
@@ -123,7 +126,7 @@ class Subscriber {
 
   public function head_feed(Request $request, $args) {
     $response = Response::make();
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -195,7 +198,7 @@ class Subscriber {
 
   public function get_feed(Request $request, $args) {
     $response = Response::make();
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -307,7 +310,7 @@ class Subscriber {
 
   public function hub(Request $request, $args) {
     $response = Response::make();
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -430,6 +433,8 @@ class Subscriber {
             if(array_key_exists('hub_secret', $params))
               $subscriber->secret = $params['hub_secret'];
           }
+          if(!$subscriber->user_id)
+            $subscriber->user_id = Feed::owner($token);
 
           // Generate a new challenge
           $subscriber->challenge = p3k\random_string(20);
@@ -520,7 +525,7 @@ class Subscriber {
   }
 
   public function publish(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 

@@ -59,7 +59,9 @@ CREATE TABLE `subscriber_hub` (
   `date_last_notified` datetime DEFAULT NULL,
   `notification_response_code` int(11) DEFAULT NULL,
   `notification_response` blob,
-  PRIMARY KEY (`id`)
+  `user_id` int(11) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `publishers` (

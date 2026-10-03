@@ -68,7 +68,7 @@ The database schema is in the `database/` folder, so you can set up the database
 mysql -u root websubrocks < database/schema.sql
 ```
 
-If you're upgrading an existing install, apply the numbered migrations in `database/` that you haven't run yet instead. `0003.sql` adds the tables for passkey login.
+If you're upgrading an existing install, apply the numbered migrations in `database/` that you haven't run yet instead. `0003.sql` adds the tables for passkey login, and `0004.sql` records which user ran each subscriber test.
 
 #### Install Nginx
 

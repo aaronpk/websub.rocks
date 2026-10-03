@@ -116,7 +116,7 @@ class Account {
   }
 
   private static function user() {
-    p3k\session_setup();
+    session_setup();
     return is_logged_in() ? logged_in_user() : false;
   }
 

@@ -14,7 +14,7 @@ class Publisher {
   public $client;
 
   public function index(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     return Response::make(200, page('publisher/index', [
       'title' => 'WebSub Rocks!',
@@ -22,7 +22,7 @@ class Publisher {
   }
 
   public function discover(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     $this->client = http_client(10);
 
@@ -206,7 +206,7 @@ class Publisher {
   }
 
   public function subscribe(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     $this->client = http_client(10);
 

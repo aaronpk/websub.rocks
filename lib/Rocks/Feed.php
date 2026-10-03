@@ -16,6 +16,18 @@ class Feed {
     self::touch_feed($token);
   }
 
+  // The subscriber's hub requests come from the user's server, not their
+  // browser, so remember who opened the test page to credit them with the
+  // subscription it creates. A week is plenty to finish a test.
+  public static function set_owner($token, $user_id) {
+    p3k\redis()->setex('websub.rocks::owner::'.$token, 86400*7, $user_id);
+  }
+
+  public static function owner($token) {
+    $user_id = p3k\redis()->get('websub.rocks::owner::'.$token);
+    return $user_id ? (int)$user_id : null;
+  }
+
   public static function touch_feed($token) {
     $key = 'websub.rocks::feed::'.$token;
     p3k\redis()->expire($key, 86400);

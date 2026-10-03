@@ -14,7 +14,7 @@ use IndieWeb;
 class Hub {
 
   public function index(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     return Response::make(200, page('hub/index', [
       'title' => 'WebSub Rocks!',
@@ -22,7 +22,7 @@ class Hub {
   }
 
   public function get_test(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
 
     switch($num) {
@@ -68,7 +68,7 @@ class Hub {
 
   // Start a new test
   public function post_start(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
 
     $params = $request->post;
@@ -139,7 +139,7 @@ class Hub {
 
   // Start the subscription request, triggered automatically after the user presses start
   public function post_subscribe(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
 
     $token = (string)$request->post('token');
@@ -194,7 +194,7 @@ class Hub {
 
   // The hub sends the verification challenge here
   public function get_subscriber(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -252,7 +252,7 @@ class Hub {
 
   // The hub gets the content of the topic here
   public function get_publisher(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -309,7 +309,7 @@ class Hub {
 
   // For public hubs, the user will trigger a new post be added here
   public function post_publisher(Request $request, $args) {
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 
@@ -343,7 +343,7 @@ class Hub {
   // a WebSub delivery notification
   public function post_subscriber(Request $request, $args) {
     $response = Response::make();
-    p3k\session_setup();
+    session_setup();
     $num = $args['num'];
     $token = $args['token'];
 

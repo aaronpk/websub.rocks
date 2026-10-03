@@ -15,7 +15,7 @@ class Controller {
   }
 
   public function index(Request $request) {
-    p3k\session_setup();
+    session_setup();
 
     return Response::make(200, page('index', [
       'title' => 'WebSub Rocks!',

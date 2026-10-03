@@ -7,12 +7,13 @@
 // new ones from being created this way.
 //
 // A user is deleted only if all of these are true:
-//   - no hubs or publishers rows belong to them
+//   - no hubs, publishers or subscriber_hub rows belong to them
 //   - they have no passkeys
 //   - they haven't logged in during the grace period (default 30 days)
 //
-// Subscriber tests don't record which user ran them, so someone who only
-// ever tested a subscriber also has no test data and will be deleted.
+// Subscriber tests only record the user since database/0004.sql, so
+// someone who only tested a subscriber before then has no test data and
+// will be deleted.
 //
 // Usage, from the project root:
 //   php scripts/delete-junk-users.php            # dry run: report only
@@ -40,10 +41,13 @@ if($days < 1) {
 
 $db = ORM::get_db();
 
-// Refuse to run before the passkeys migration, or every passkey user's
-// protection below would be silently missing
+// Refuse to run before the migrations it depends on, rather than fail
+// partway or miss users who should be kept
 if(!$db->query("SHOW TABLES LIKE 'passkeys'")->fetchColumn()) {
   fail("The passkeys table doesn't exist. Apply database/0003.sql first.");
+}
+if(!$db->query("SHOW COLUMNS FROM subscriber_hub LIKE 'user_id'")->fetchColumn()) {
+  fail("subscriber_hub has no user_id column. Apply database/0004.sql first.");
 }
 
 $cutoff = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
@@ -53,6 +57,7 @@ $junk = "
   FROM users u
   WHERE NOT EXISTS (SELECT 1 FROM hubs h WHERE h.user_id = u.id)
     AND NOT EXISTS (SELECT 1 FROM publishers p WHERE p.user_id = u.id)
+    AND NOT EXISTS (SELECT 1 FROM subscriber_hub s WHERE s.user_id = u.id)
     AND NOT EXISTS (SELECT 1 FROM passkeys k WHERE k.user_id = u.id)
     AND (u.last_login IS NULL OR u.last_login < :login_cutoff)
     AND (u.date_created IS NULL OR u.date_created < :created_cutoff)";

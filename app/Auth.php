@@ -62,7 +62,7 @@ class Auth {
       return self::error('There is already an account for that email address. Sign in with your passkey instead.', 409);
     }
 
-    p3k\session_setup(true);
+    session_setup(true);
 
     // Always a new account. An older account with this email and no passkey
     // isn't reused, since nothing here proves the person owns the address.
@@ -78,7 +78,7 @@ class Auth {
     if($error = self::check_request($request))
       return $error;
 
-    p3k\session_setup(true);
+    session_setup(true);
     $body = $request->json();
 
     try {
@@ -114,7 +114,7 @@ class Auth {
     if($error = self::check_request($request))
       return $error;
 
-    p3k\session_setup(true);
+    session_setup(true);
 
     return Response::json(Passkeys::begin_login());
   }
@@ -123,7 +123,7 @@ class Auth {
     if($error = self::check_request($request))
       return $error;
 
-    p3k\session_setup(true);
+    session_setup(true);
     $body = $request->json();
 
     try {
@@ -143,7 +143,7 @@ class Auth {
   }
 
   public function signout(Request $request) {
-    p3k\session_setup(true);
+    session_setup(true);
     unset($_SESSION['user_id']);
     unset($_SESSION['email']);
     $_SESSION = [];
