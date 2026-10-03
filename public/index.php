@@ -45,8 +45,6 @@ $router->post('/account/passkeys', [App\Account::class, 'add']);
 $router->post('/account/passkeys/{id}/rename', [App\Account::class, 'rename']);
 $router->post('/account/passkeys/{id}/remove', [App\Account::class, 'remove']);
 
-$router->post('/cron/cleanup', [App\Controller::class, 'clean_logins']);
-
 $router->get('/publisher', [App\Publisher::class, 'index']);
 $router->post('/publisher/discover', [App\Publisher::class, 'discover']);
 $router->post('/publisher/subscribe', [App\Publisher::class, 'subscribe']);
